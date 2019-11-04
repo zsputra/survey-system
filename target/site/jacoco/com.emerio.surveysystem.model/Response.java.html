@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Response.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">survey-system-survey-service</a> &gt; <a href="index.source.html" class="el_package">com.emerio.surveysystem.model</a> &gt; <span class="el_source">Response.java</span></div><h1>Response.java</h1><pre class="source lang-java linenums">package com.emerio.surveysystem.model;
+
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+<span class="fc" id="L8">public class Response {</span>
+    private int responseId;
+    private int surveyId;
+    private String userId;
+    private int pageId;
+    private int questionId;
+    private String questionType;
+    private String answer;
+    //private LocalDateTime dateAnswer;
+    private Timestamp dateAnswer;
+<span class="fc" id="L18">    private List&lt;Values&gt; optionAnswers = new ArrayList&lt;&gt;();</span>
+
+    public int getResponseId() {
+<span class="nc" id="L21">        return responseId;</span>
+    }
+
+    public void setResponseId(int responseId) {
+<span class="nc" id="L25">        this.responseId = responseId;</span>
+<span class="nc" id="L26">    }</span>
+
+    public int getSurveyId() {
+<span class="fc" id="L29">        return surveyId;</span>
+    }
+
+    public void setSurveyId(int surveyId) {
+<span class="fc" id="L33">        this.surveyId = surveyId;</span>
+<span class="fc" id="L34">    }</span>
+
+    public String getUserId() {
+<span class="nc" id="L37">        return userId;</span>
+    }
+
+    public void setUserId(String userId) {
+<span class="nc" id="L41">        this.userId = userId;</span>
+<span class="nc" id="L42">    }</span>
+
+    public int getPageId() {
+<span class="fc" id="L45">        return pageId;</span>
+    }
+
+    public void setPageId(int pageId) {
+<span class="fc" id="L49">        this.pageId = pageId;</span>
+<span class="fc" id="L50">    }</span>
+
+    public int getQuestionId() {
+<span class="fc" id="L53">        return questionId;</span>
+    }
+
+    public void setQuestionId(int questionId) {
+<span class="fc" id="L57">        this.questionId = questionId;</span>
+<span class="fc" id="L58">    }</span>
+
+//    public List&lt;OptionAnswer&gt; getOptionAnswers() {
+//        return optionAnswers;
+//    }
+//
+//    public void setOptionAnswers(List&lt;OptionAnswer&gt; answer) {
+//        this.optionAnswers = answer;
+//    }
+//
+//    public void addOptionAnswers(OptionAnswer answer) {
+//        this.optionAnswers.add(answer);
+//    }
+
+
+    public List&lt;Values&gt; getOptionAnswers() {
+<span class="fc" id="L74">        return optionAnswers;</span>
+    }
+
+    public void setOptionAnswers(List&lt;Values&gt; optionAnswers) {
+<span class="fc" id="L78">        this.optionAnswers = optionAnswers;</span>
+<span class="fc" id="L79">    }</span>
+
+    public String getQuestionType() {
+<span class="fc" id="L82">        return questionType;</span>
+    }
+
+    public void setQuestionType(String questionType) {
+<span class="fc" id="L86">        this.questionType = questionType;</span>
+<span class="fc" id="L87">    }</span>
+
+    public String getAnswer() {
+<span class="fc" id="L90">        return answer;</span>
+    }
+
+    public void setAnswer(String answer) {
+<span class="fc" id="L94">        this.answer = answer;</span>
+<span class="fc" id="L95">    }</span>
+
+//    public LocalDateTime getDateAnswer() {
+//        return dateAnswer;
+//    }
+//
+//    public void setDateAnswer(LocalDateTime dateAnswer) {
+//        this.dateAnswer = dateAnswer;
+//    }
+
+
+    public Timestamp getDateAnswer() {
+<span class="nc" id="L107">        return dateAnswer;</span>
+    }
+
+    public void setDateAnswer(Timestamp dateAnswer) {
+<span class="fc" id="L111">        this.dateAnswer = dateAnswer;</span>
+<span class="fc" id="L112">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Survey.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">survey-system-survey-service</a> &gt; <a href="index.source.html" class="el_package">com.emerio.surveysystem.model</a> &gt; <span class="el_source">Survey.java</span></div><h1>Survey.java</h1><pre class="source lang-java linenums">package com.emerio.surveysystem.model;
+
+import org.bson.Document;
+import org.springframework.stereotype.Component;
+
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+@Component
+<span class="fc" id="L11">public class Survey {</span>
+
+    private int idSurvey;
+
+    private String idUser;
+
+    private LocalDateTime lastModified;
+
+    private String colorHeader;
+
+    private String colorBg;
+
+    private String icon;
+
+    private String imgHeader;
+
+    private String imgIcon;
+
+    private Boolean privateStatus;
+
+    private Boolean activeStatus;
+
+    private Boolean publishStatus;
+
+<span class="fc" id="L35">    private List&lt;Page&gt; pages = new ArrayList&lt;&gt;();</span>
+
+    public int getIdSurvey() {
+<span class="fc" id="L38">        return this.idSurvey;</span>
+    }
+
+    public void setIdSurvey(int idSurvey) {
+<span class="fc" id="L42">        this.idSurvey = idSurvey;</span>
+<span class="fc" id="L43">    }</span>
+
+    public String getColorHeader() {
+<span class="fc" id="L46">        return this.colorHeader;</span>
+    }
+
+    public void setColorHeader(String colorHeader) {
+<span class="fc" id="L50">        this.colorHeader = colorHeader;</span>
+<span class="fc" id="L51">    }</span>
+
+    public String getColorBg() {
+<span class="fc" id="L54">        return this.colorBg;</span>
+    }
+
+    public void setColorBg(String colorBg) {
+<span class="fc" id="L58">        this.colorBg = colorBg;</span>
+<span class="fc" id="L59">    }</span>
+
+    public String getIcon() {
+<span class="fc" id="L62">        return this.icon;</span>
+    }
+
+    public void setIcon(String icon) {
+<span class="fc" id="L66">        this.icon = icon;</span>
+<span class="fc" id="L67">    }</span>
+
+    public String getImgHeader() {
+<span class="fc" id="L70">        return imgHeader;</span>
+    }
+
+    public void setImgHeader(String imgHeader) {
+<span class="fc" id="L74">        this.imgHeader = imgHeader;</span>
+<span class="fc" id="L75">    }</span>
+
+    public Boolean isPrivateStatus() {
+<span class="nc" id="L78">        return this.privateStatus;</span>
+    }
+
+    public Boolean getPrivateStatus() {
+<span class="fc" id="L82">        return this.privateStatus;</span>
+    }
+
+    public void setPrivateStatus(Boolean privateStatus) {
+<span class="fc" id="L86">        this.privateStatus = privateStatus;</span>
+<span class="fc" id="L87">    }</span>
+
+    public Boolean isActiveStatus() {
+<span class="nc" id="L90">        return this.activeStatus;</span>
+    }
+
+    public Boolean getActiveStatus() {
+<span class="fc" id="L94">        return this.activeStatus;</span>
+    }
+
+    public void setActiveStatus(Boolean activeStatus) {
+<span class="fc" id="L98">        this.activeStatus = activeStatus;</span>
+<span class="fc" id="L99">    }</span>
+
+    public Boolean isPublishStatus() {
+<span class="nc" id="L102">        return this.publishStatus;</span>
+    }
+
+    public Boolean getPublishStatus() {
+<span class="fc" id="L106">        return this.publishStatus;</span>
+    }
+
+    public void setPublishStatus(Boolean publishStatus) {
+<span class="fc" id="L110">        this.publishStatus = publishStatus;</span>
+<span class="fc" id="L111">    }</span>
+
+    public List&lt;Page&gt; getPages() {
+<span class="fc" id="L114">        return pages;</span>
+    }
+
+    public void addPages(Page page) {
+<span class="fc" id="L118">        this.pages.add(page);</span>
+<span class="fc" id="L119">    }</span>
+
+    public void setPages(List&lt;Page&gt; pages) {
+<span class="fc" id="L122">        this.pages = pages;</span>
+
+<span class="fc" id="L124">    }</span>
+
+    public String getImgIcon() {
+<span class="fc" id="L127">        return imgIcon;</span>
+    }
+
+    public void setImgIcon(String imgIcon) {
+<span class="fc" id="L131">        this.imgIcon = imgIcon;</span>
+<span class="fc" id="L132">    }</span>
+
+    public String getIdUser() {
+<span class="fc" id="L135">        return idUser;</span>
+    }
+
+    public void setIdUser(String idUser) {
+<span class="fc" id="L139">        this.idUser = idUser;</span>
+<span class="fc" id="L140">    }</span>
+
+    public LocalDateTime getLastModified() {
+<span class="fc" id="L143">        return lastModified;</span>
+    }
+
+    public void setLastModified() {
+<span class="fc" id="L147">        this.lastModified = LocalDateTime.now();</span>
+<span class="fc" id="L148">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

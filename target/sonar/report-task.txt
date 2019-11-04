@@ -1,0 +1,6 @@
+projectKey=com.emerio:survey-system
+serverUrl=http://192.168.25.11:8980
+serverVersion=7.7.0.23042
+dashboardUrl=http://192.168.25.11:8980/dashboard?id=com.emerio%3Asurvey-system
+ceTaskId=AW4l7jOQXaU3zbt-ych4
+ceTaskUrl=http://192.168.25.11:8980/api/ce/task?id=AW4l7jOQXaU3zbt-ych4

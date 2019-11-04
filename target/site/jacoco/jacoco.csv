@@ -1,0 +1,37 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+survey-system-survey-service,com.emerio.surveysystem,DemoApplication,0,8,0,0,0,3,0,2,0,2
+survey-system-survey-service,com.emerio.surveysystem,SurveyRowMapper.new TypeToken() {...},0,6,0,0,0,1,0,1,0,1
+survey-system-survey-service,com.emerio.surveysystem,SurveyPageRowMapper,58,0,0,0,14,0,2,0,2,0
+survey-system-survey-service,com.emerio.surveysystem,PageOneRowMapper,42,0,0,0,11,0,2,0,2,0
+survey-system-survey-service,com.emerio.surveysystem,ResponseTempRowMapper.new TypeToken() {...},6,0,0,0,1,0,1,0,1,0
+survey-system-survey-service,com.emerio.surveysystem,PageRowMapper,17,0,0,0,4,0,2,0,2,0
+survey-system-survey-service,com.emerio.surveysystem,Controller,1432,63,11,3,327,13,41,7,35,6
+survey-system-survey-service,com.emerio.surveysystem,ValueRowMapper,25,0,0,0,7,0,2,0,2,0
+survey-system-survey-service,com.emerio.surveysystem,PageOneRowMapper.new TypeToken() {...},6,0,0,0,1,0,1,0,1,0
+survey-system-survey-service,com.emerio.surveysystem,ResponseTempRowMapper,72,0,0,0,17,0,2,0,2,0
+survey-system-survey-service,com.emerio.surveysystem,ResponseRowMapper,72,0,0,0,17,0,2,0,2,0
+survey-system-survey-service,com.emerio.surveysystem,SurveyRowMapper,0,87,0,0,0,20,0,2,0,2
+survey-system-survey-service,com.emerio.surveysystem,ValueRowMapper.new TypeToken() {...},6,0,0,0,1,0,1,0,1,0
+survey-system-survey-service,com.emerio.surveysystem,ResponseRowMapper.new TypeToken() {...},6,0,0,0,1,0,1,0,1,0
+survey-system-survey-service,com.emerio.surveysystem.service,FileService,151,3,2,0,48,1,3,1,2,1
+survey-system-survey-service,com.emerio.surveysystem.service,SurveyService,1153,201,39,7,222,49,71,14,51,11
+survey-system-survey-service,com.emerio.surveysystem.service,SurveyViewRowMapper,14,0,0,0,4,0,2,0,2,0
+survey-system-survey-service,com.emerio.surveysystem.model,SurveyDao.new BatchPreparedStatementSetter() {...},0,35,0,0,0,7,0,3,0,3
+survey-system-survey-service,com.emerio.surveysystem.model,SurveyDao.new BatchPreparedStatementSetter() {...},0,69,0,0,0,12,0,3,0,3
+survey-system-survey-service,com.emerio.surveysystem.model,SurveyDao.new BatchPreparedStatementSetter() {...},0,43,0,0,0,8,0,3,0,3
+survey-system-survey-service,com.emerio.surveysystem.model,SurveyDao.new BatchPreparedStatementSetter() {...},94,0,0,0,13,0,3,0,3,0
+survey-system-survey-service,com.emerio.surveysystem.model,Values,0,31,0,0,0,13,0,9,0,9
+survey-system-survey-service,com.emerio.surveysystem.model,SurveyViewAssign,141,0,0,0,57,0,31,0,31,0
+survey-system-survey-service,com.emerio.surveysystem.model,Page,0,55,0,0,0,21,0,14,0,14
+survey-system-survey-service,com.emerio.surveysystem.model,OptionAnswer,34,0,0,0,14,0,10,0,10,0
+survey-system-survey-service,com.emerio.surveysystem.model,Survey,9,98,0,0,3,40,3,26,3,26
+survey-system-survey-service,com.emerio.surveysystem.model,Question,43,104,0,0,21,38,11,27,11,27
+survey-system-survey-service,com.emerio.surveysystem.model,User,24,0,0,0,10,0,7,0,7,0
+survey-system-survey-service,com.emerio.surveysystem.model,Response,17,54,0,0,7,22,5,14,5,14
+survey-system-survey-service,com.emerio.surveysystem.model,SurveyView,58,57,0,0,26,21,16,9,16,9
+survey-system-survey-service,com.emerio.surveysystem.model,Pictures,24,0,0,0,10,0,7,0,7,0
+survey-system-survey-service,com.emerio.surveysystem.model,UserDao,84,3,0,0,19,1,3,1,3,1
+survey-system-survey-service,com.emerio.surveysystem.model,SurveyDao,4174,319,73,5,890,58,96,14,58,13
+survey-system-survey-service,com.emerio.surveysystem.model,Validate,21,3,0,0,9,1,6,1,6,1
+survey-system-survey-service,com.emerio.surveysystem.model,SurveyDao.new PreparedStatementCreator() {...},0,36,0,0,0,6,0,2,0,2
+survey-system-survey-service,com.emerio.surveysystem.model,Description,0,17,0,0,0,7,0,5,0,5

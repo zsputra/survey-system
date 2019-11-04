@@ -1,0 +1,1624 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SurveyDao.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">survey-system-survey-service</a> &gt; <a href="index.source.html" class="el_package">com.emerio.surveysystem.model</a> &gt; <span class="el_source">SurveyDao.java</span></div><h1>SurveyDao.java</h1><pre class="source lang-java linenums">package com.emerio.surveysystem.model;
+
+import com.emerio.surveysystem.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import org.bson.Document;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.PreparedStatementCreator;
+import org.springframework.jdbc.core.support.JdbcDaoSupport;
+import org.springframework.stereotype.Repository;
+
+import javax.annotation.PostConstruct;
+import javax.sql.DataSource;
+import java.sql.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+
+@Repository
+<span class="fc" id="L23">public class SurveyDao extends JdbcDaoSupport {</span>
+
+    @Autowired
+    JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    DataSource dataSource;
+
+    private Survey survey;
+
+    @PostConstruct
+    private void initialize() {
+<span class="fc" id="L35">        setDataSource(dataSource);</span>
+<span class="fc" id="L36">    }</span>
+
+    public void insert(Survey survey) {
+
+<span class="fc" id="L40">        String sql = &quot;INSERT INTO Survey&quot; + &quot;(pages) VALUES(to_jsonb(?::jsonb))&quot;;</span>
+<span class="fc" id="L41">        getJdbcTemplate().update(new PreparedStatementCreator() {</span>
+
+            @Override
+            public PreparedStatement createPreparedStatement(Connection con) throws SQLException {
+<span class="fc" id="L45">                PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);</span>
+<span class="fc" id="L46">                Gson gson = new GsonBuilder().setPrettyPrinting().create();</span>
+<span class="fc" id="L47">                String json = gson.toJson(survey.getPages());</span>
+<span class="fc" id="L48">                ps.setString(1, json);</span>
+
+<span class="fc" id="L50">                return ps;</span>
+
+            }
+        });
+<span class="fc" id="L54">    }</span>
+
+    public void insertBatch(List&lt;Survey&gt; surveys) {
+
+<span class="fc" id="L58">        String sql = &quot;INSERT INTO Survey&quot; + &quot;(pages) VALUES(to_jsonb(?::jsonb))&quot;;</span>
+<span class="fc" id="L59">        getJdbcTemplate().batchUpdate(sql, new BatchPreparedStatementSetter() {</span>
+
+            @Override
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+<span class="fc" id="L63">                Survey survey = surveys.get(i);</span>
+<span class="fc" id="L64">                Gson gson = new GsonBuilder().setPrettyPrinting().create();</span>
+<span class="fc" id="L65">                String json = gson.toJson(survey.getPages());</span>
+<span class="fc" id="L66">                ps.setString(1, json);</span>
+
+<span class="fc" id="L68">            }</span>
+
+            @Override
+            public int getBatchSize() {
+<span class="fc" id="L72">                return surveys.size();</span>
+            }
+        });
+<span class="fc" id="L75">    }</span>
+
+    public List&lt;Survey&gt; loadAllSurvey() throws Exception {
+<span class="fc" id="L78">        String sql = &quot;SELECT * FROM Survey&quot;;</span>
+<span class="fc" id="L79">        List&lt;Survey&gt; surveys = jdbcTemplate.query(sql, new SurveyRowMapper());</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">        if (surveys.isEmpty()) {</span>
+<span class="nc" id="L81">            throw new Exception(&quot;not found&quot;);</span>
+        }
+<span class="fc" id="L83">        return surveys;</span>
+
+    }
+
+    public Survey loadSurveyById(int idSurvey) {
+<span class="fc" id="L88">        String sql = &quot;SELECT * FROM Survey WHERE survey_id = ?&quot;;</span>
+
+<span class="fc" id="L90">        return jdbcTemplate.queryForObject(sql, new Object[] { idSurvey }, new SurveyRowMapper());</span>
+    }
+
+    public Boolean checkSurveyById(int idSurvey) {
+<span class="fc" id="L94">        String sql = &quot;SELECT COUNT(1) FROM Survey WHERE survey_id = ?&quot;;</span>
+<span class="fc" id="L95">        int count = getJdbcTemplate().queryForObject(sql, Integer.class, idSurvey);</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        if (count == 0) {</span>
+<span class="fc" id="L97">            return false;</span>
+        } else {
+<span class="fc" id="L99">            return true;</span>
+        }
+
+    }
+
+    public void updateSurvey(Survey survey) {
+
+<span class="fc" id="L106">        String sql = &quot;UPDATE Survey SET createdby = ?, lastmodified = ?, colorheader = ?, colorbg = ?, imgHeader = ?, imgLogo = ?, icon = ?, privatestatus = ?, activestatus = ?, publishstatus =?,  pages =  to_jsonb(?::jsonb) WHERE survey_id = ?&quot;;</span>
+
+<span class="fc" id="L108">        Gson gson = new Gson();</span>
+<span class="fc" id="L109">        String json = gson.toJson(survey.getPages());</span>
+<span class="fc" id="L110">        survey.setLastModified();</span>
+<span class="fc" id="L111">        Object[] params = { survey.getIdUser(), survey.getLastModified(), survey.getColorHeader(), survey.getColorBg(),</span>
+<span class="fc" id="L112">                survey.getImgHeader(), survey.getImgIcon(), survey.getIcon(), survey.getPrivateStatus(),</span>
+<span class="fc" id="L113">                survey.getActiveStatus(), survey.getPublishStatus(), json, survey.getIdSurvey() };</span>
+
+<span class="fc" id="L115">        jdbcTemplate.update(sql, params);</span>
+
+<span class="fc" id="L117">    }</span>
+
+    public void deleteSurveyById(int surveyId) {
+
+<span class="nc" id="L121">        String sql = &quot;DELETE FROM survey where survey_id = ?&quot;;</span>
+
+<span class="nc" id="L123">        Object[] params = { surveyId };</span>
+
+<span class="nc" id="L125">        jdbcTemplate.update(sql, params);</span>
+
+<span class="nc" id="L127">    }</span>
+
+    public void deleteSurveys() {
+<span class="nc" id="L130">        String sql = &quot;DELETE FROM survey where survey_id = ?&quot;;</span>
+
+<span class="nc" id="L132">        jdbcTemplate.update(sql);</span>
+<span class="nc" id="L133">    }</span>
+
+    public int generatedId() throws SQLException {
+
+<span class="fc" id="L137">        Survey survey = new Survey();</span>
+<span class="fc" id="L138">        Page pageA1 = new Page();</span>
+<span class="fc" id="L139">        survey.addPages(pageA1);</span>
+
+<span class="fc" id="L141">        String sql = &quot;INSERT INTO Survey&quot; + &quot;(pages) VALUES(to_jsonb(?::jsonb))&quot;;</span>
+
+<span class="fc" id="L143">        try (Connection con = dataSource.getConnection();</span>
+<span class="fc" id="L144">                PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);) {</span>
+
+<span class="fc" id="L146">            Gson gson = new GsonBuilder().setPrettyPrinting().create();</span>
+<span class="fc" id="L147">            String json = gson.toJson(survey.getPages());</span>
+<span class="fc" id="L148">            ps.setString(1, json);</span>
+<span class="fc" id="L149">            int affectedRows = ps.executeUpdate();</span>
+
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">            if (affectedRows == 0) {</span>
+<span class="nc" id="L152">                throw new SQLException(&quot;Creating user failed, no rows affected.&quot;);</span>
+            }
+
+<span class="fc" id="L155">            try (ResultSet generatedKeys = ps.getGeneratedKeys()) {</span>
+<span class="pc bpc" id="L156" title="1 of 2 branches missed.">                if (generatedKeys.next()) {</span>
+<span class="fc" id="L157">                    survey.setIdSurvey(generatedKeys.getInt(1));</span>
+                } else {
+<span class="nc" id="L159">                    throw new SQLException(&quot;Creating user failed, no ID obtained.&quot;);</span>
+                }
+            }
+        }
+
+<span class="fc" id="L164">        return survey.getIdSurvey();</span>
+    }
+
+    public Survey loadSurveyByIdPageOne(int idSurvey) {
+<span class="nc" id="L168">        String sql = &quot;SELECT * FROM Survey WHERE survey_id = ?&quot;;</span>
+
+<span class="nc" id="L170">        return jdbcTemplate.queryForObject(sql, new Object[] { idSurvey }, new PageOneRowMapper());</span>
+    }
+
+    public Page loadPageBySurveyIdandPageId(int idSurvey, String idUser, int idPage) {
+<span class="nc" id="L174">        String sql = &quot;SELECT pages FROM (SELECT DISTINCT jsonb_array_elements(pages) AS pages, response_temp_user_id from Survey INNER JOIN &quot;</span>
+                + &quot;response_temp ON response_temp.response_temp_survey_id = survey.survey_id WHERE survey_id = ? and response_temp_user_id = ?) &quot;
+                + &quot;AS pages WHERE (pages -&gt;&gt; 'id')::int = ?&quot;;
+
+<span class="nc" id="L178">        return jdbcTemplate.queryForObject(sql, new Object[] { idSurvey, idUser, idPage }, new PageRowMapper());</span>
+    }
+
+    public Survey loadSurveyBySurveyIdandPageId(int idSurvey, String idUser, int idPage) {
+<span class="nc" id="L182">        String sql = &quot;SELECT * FROM (SELECT DISTINCT survey.survey_id, colorheader, colorbg, icon, imgHeader, imgLogo, response_temp_user_id, &quot;</span>
+                + &quot;jsonb_array_elements(pages) AS pages FROM Survey INNER JOIN response_temp ON response_temp.response_temp_survey_id = survey.survey_id &quot;
+                + &quot;WHERE survey_id =? and response_temp_user_id = ?) AS new_survey WHERE (pages -&gt;&gt; 'id')::int = ?&quot;;
+
+<span class="nc" id="L186">        return jdbcTemplate.queryForObject(sql, new Object[] { idSurvey, idUser, idPage }, new SurveyPageRowMapper());</span>
+    }
+
+    public int totalCountPage(int idSurvey) {
+<span class="nc" id="L190">        String sql = &quot;SELECT COUNT (*) FROM (SELECT jsonb_array_elements(pages) AS pages from Survey WHERE survey_id = ?) as pages&quot;;</span>
+
+<span class="nc" id="L192">        return jdbcTemplate.queryForObject(sql, new Object[] { idSurvey }, Integer.class);</span>
+    }
+
+    public List&lt;Values&gt; loadOptionAnswerbySurveyIdPageIdandQuestionId(int idSurvey, int idPage, int idQuestion,
+            String idUser) {
+<span class="nc" id="L197">        String sql = &quot;SELECT optionanswer from response_temp WHERE response_temp_survey_id = ? and response_temp_page_id = ? and question_temp_id = ? &quot;</span>
+                + &quot;and response_temp_user_id = ?&quot;;
+
+<span class="nc" id="L200">        return jdbcTemplate.queryForObject(sql, new Object[] { idSurvey, idPage, idQuestion, idUser },</span>
+                new ValueRowMapper());
+    }
+
+    public String loadAnswerbySurveyIdPageIdandQuestionId(int idSurvey, int idPage, int idQuestion, String idUser) {
+<span class="nc" id="L205">        String sql = &quot;SELECT answer from response_temp WHERE response_temp_survey_id = ? and response_temp_page_id = ? and question_temp_id = ? and &quot;</span>
+                + &quot;response_temp_user_id = ?&quot;;
+
+<span class="nc" id="L208">        return jdbcTemplate.queryForObject(sql, new Object[] { idSurvey, idPage, idQuestion, idUser }, String.class);</span>
+    }
+
+    public Timestamp loadDateAnswerbySurveyIdPageIdandQuestionId(int idSurvey, int idPage, int idQuestion,
+                                                                 String idUser) {
+<span class="nc" id="L213">        String sql = &quot;SELECT dateanswer from response_temp WHERE response_temp_survey_id = ? and response_temp_page_id = ? and question_temp_id = ? and &quot;</span>
+                + &quot;response_temp_user_id = ?&quot;;
+
+<span class="nc" id="L216">        return jdbcTemplate.queryForObject(sql, new Object[] { idSurvey, idPage, idQuestion, idUser },</span>
+                Timestamp.class);
+    }
+
+    public String loadUserId(int idSurvey, String idUser) {
+<span class="nc" id="L221">        String sql = &quot;SELECT DISTINCT response_temp_user_id from response_temp WHERE response_temp_survey_id = ? and response_temp_user_id = ?&quot;;</span>
+
+<span class="nc" id="L223">        return jdbcTemplate.queryForObject(sql, new Object[] { idSurvey, idUser }, String.class);</span>
+    }
+
+    public Boolean loadSubmitStatus(int idSurvey, String idUser) {
+<span class="nc" id="L227">        String sql = &quot;SELECT submitresponse from user_survey WHERE survey_id = ? and user_id = ?&quot;;</span>
+
+<span class="nc" id="L229">        return jdbcTemplate.queryForObject(sql, new Object[] { idSurvey, idUser }, Boolean.class);</span>
+    }
+
+    public Boolean checkAnswerBySurveyIdPageIdQuestionId(int idSurvey, int idPage, int idQuestion, String idUser) {
+<span class="nc" id="L233">        String sql = &quot;SELECT EXISTS (SELECT dateanswer , answer, optionanswer from response_temp WHERE response_temp_survey_id = ? and response_temp_page_id = ? and &quot;</span>
+                + &quot;question_temp_id = ? and response_temp_user_id = ?)&quot;;
+
+<span class="nc" id="L236">        boolean exist = getJdbcTemplate().queryForObject(sql, new Object[] { idSurvey, idPage, idQuestion, idUser },</span>
+                Boolean.class);
+
+<span class="nc" id="L239">        return exist;</span>
+    }
+
+    public List&lt;SurveyView&gt; surveyPagination(String idUser, int limit, int pageNo) throws SQLException {
+<span class="nc" id="L243">        List&lt;SurveyView&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L244">        String sql = &quot;select survey_id, lastmodified, colorHeader,imgHeader, icon, imgLogo,privatestatus,activestatus, publishstatus,obj.val-&gt;&gt; 'title' AS title from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON obj.val -&gt;&gt;'id'='0' WHERE createdby = ? ORDER BY survey_id DESC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L245">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L247">            p.setString(1, idUser);</span>
+            // p.setInt(1, limit);
+<span class="nc" id="L249">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L250">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L252" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L253">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L254">                    LocalDateTime lastModified = rs.getObject(&quot;lastmodified&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L255">                    String formattedDate = lastModified.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+<span class="nc" id="L256">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L257">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L258">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L259">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L260">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L261">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L262">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L263">                    String title = rs.getString(&quot;title&quot;);</span>
+
+<span class="nc" id="L265">                    SurveyView surveyview = new SurveyView(idSurvey, formattedDate, colorHeader, imgHeader, icon,</span>
+                            imgIcon, privateStatus, activeStatus, publishStatus, title);
+
+<span class="nc" id="L268">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L270">                }</span>
+<span class="nc" id="L271">            } catch (Exception e) {</span>
+<span class="nc" id="L272">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L273">            }</span>
+<span class="nc" id="L274">        } catch (Exception e) {</span>
+<span class="nc" id="L275">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L276">        }</span>
+<span class="nc" id="L277">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationSaveStatus(String idUser, int limit, int pageNo) throws SQLException {
+<span class="nc" id="L282">        List&lt;SurveyView&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L283">        String sql = &quot;select survey_id, lastmodified, colorHeader,imgHeader, icon, imgLogo,privatestatus,activestatus, publishstatus,obj.val-&gt;&gt; 'title' AS title from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON obj.val  -&gt;&gt;'id'='0' WHERE createdby = ? AND publishstatus = false ORDER BY survey_id ASC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L284">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L286">            p.setString(1, idUser);</span>
+            // p.setInt(1, limit);
+
+<span class="nc" id="L289">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L290">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L292" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L293">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L294">                    LocalDateTime lastModified = rs.getObject(&quot;lastmodified&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L295">                    String formattedDate = lastModified.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+<span class="nc" id="L296">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L297">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L298">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L299">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L300">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L301">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L302">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L303">                    String title = rs.getString(&quot;title&quot;);</span>
+
+<span class="nc" id="L305">                    SurveyView surveyview = new SurveyView(idSurvey, formattedDate, colorHeader, imgHeader, icon,</span>
+                            imgIcon, privateStatus, activeStatus, publishStatus, title);
+
+<span class="nc" id="L308">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L310">                }</span>
+<span class="nc" id="L311">            } catch (Exception e) {</span>
+<span class="nc" id="L312">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L313">            }</span>
+<span class="nc" id="L314">        } catch (Exception e) {</span>
+<span class="nc" id="L315">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L316">        }</span>
+<span class="nc" id="L317">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationSaveStatusOrderByASC(String idUser, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L323">        List&lt;SurveyView&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L324">        String sql = &quot;select survey_id, lastmodified, colorHeader,imgHeader, icon, imgLogo,privatestatus,activestatus, publishstatus,obj.val-&gt;&gt; 'title' AS title from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON obj.val  -&gt;&gt;'id'='0' WHERE createdby = ? AND publishstatus = false ORDER BY obj.val-&gt;&gt; 'title' ASC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L325">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L327">            p.setString(1, idUser);</span>
+            // p.setInt(1, limit);
+
+<span class="nc" id="L330">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L331">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L333" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L334">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L335">                    LocalDateTime lastModified = rs.getObject(&quot;lastmodified&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L336">                    String formattedDate = lastModified.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+<span class="nc" id="L337">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L338">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L339">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L340">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L341">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L342">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L343">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L344">                    String title = rs.getString(&quot;title&quot;);</span>
+
+<span class="nc" id="L346">                    SurveyView surveyview = new SurveyView(idSurvey, formattedDate, colorHeader, imgHeader, icon,</span>
+                            imgIcon, privateStatus, activeStatus, publishStatus, title);
+
+<span class="nc" id="L349">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L351">                }</span>
+<span class="nc" id="L352">            } catch (Exception e) {</span>
+<span class="nc" id="L353">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L354">            }</span>
+<span class="nc" id="L355">        } catch (Exception e) {</span>
+<span class="nc" id="L356">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L357">        }</span>
+<span class="nc" id="L358">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationSaveStatusOrderByDESC(String idUser, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L364">        List&lt;SurveyView&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L365">        String sql = &quot;select survey_id, lastmodified, colorHeader,imgHeader, icon, imgLogo,privatestatus,activestatus, publishstatus,obj.val-&gt;&gt; 'title' AS title from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON obj.val  -&gt;&gt;'id'='0' WHERE createdby = ? AND publishstatus = false ORDER BY obj.val-&gt;&gt; 'title' DESC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L366">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L368">            p.setString(1, idUser);</span>
+            // p.setInt(1, limit);
+
+<span class="nc" id="L371">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L372">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L374" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L375">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L376">                    LocalDateTime lastModified = rs.getObject(&quot;lastmodified&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L377">                    String formattedDate = lastModified.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+<span class="nc" id="L378">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L379">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L380">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L381">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L382">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L383">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L384">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L385">                    String title = rs.getString(&quot;title&quot;);</span>
+
+<span class="nc" id="L387">                    SurveyView surveyview = new SurveyView(idSurvey, formattedDate, colorHeader, imgHeader, icon,</span>
+                            imgIcon, privateStatus, activeStatus, publishStatus, title);
+
+<span class="nc" id="L390">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L392">                }</span>
+<span class="nc" id="L393">            } catch (Exception e) {</span>
+<span class="nc" id="L394">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L395">            }</span>
+<span class="nc" id="L396">        } catch (Exception e) {</span>
+<span class="nc" id="L397">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L398">        }</span>
+<span class="nc" id="L399">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationSaveStatusOrderByDateASC(String idUser, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L405">        List&lt;SurveyView&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L406">        String sql = &quot;select survey_id, lastmodified, colorHeader,imgHeader, icon, imgLogo,privatestatus,activestatus, publishstatus,obj.val-&gt;&gt; 'title' AS title from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON obj.val  -&gt;&gt;'id'='0' WHERE createdby = ? AND publishstatus = false ORDER BY lastmodified ASC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L407">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L409">            p.setString(1, idUser);</span>
+            // p.setInt(1, limit);
+
+<span class="nc" id="L412">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L413">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L415" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L416">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L417">                    LocalDateTime lastModified = rs.getObject(&quot;lastmodified&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L418">                    String formattedDate = lastModified.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+<span class="nc" id="L419">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L420">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L421">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L422">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L423">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L424">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L425">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L426">                    String title = rs.getString(&quot;title&quot;);</span>
+
+<span class="nc" id="L428">                    SurveyView surveyview = new SurveyView(idSurvey, formattedDate, colorHeader, imgHeader, icon,</span>
+                            imgIcon, privateStatus, activeStatus, publishStatus, title);
+
+<span class="nc" id="L431">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L433">                }</span>
+<span class="nc" id="L434">            } catch (Exception e) {</span>
+<span class="nc" id="L435">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L436">            }</span>
+<span class="nc" id="L437">        } catch (Exception e) {</span>
+<span class="nc" id="L438">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L439">        }</span>
+<span class="nc" id="L440">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationSaveStatusOrderByDateDESC(String idUser, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L446">        List&lt;SurveyView&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L447">        String sql = &quot;select survey_id, lastmodified, colorHeader,imgHeader, icon, imgLogo,privatestatus,activestatus, publishstatus,obj.val-&gt;&gt; 'title' AS title from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON obj.val  -&gt;&gt;'id'='0' WHERE createdby = ? AND publishstatus = false ORDER BY lastmodified DESC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L448">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L450">            p.setString(1, idUser);</span>
+            // p.setInt(1, limit);
+
+<span class="nc" id="L453">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L454">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L456" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L457">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L458">                    LocalDateTime lastModified = rs.getObject(&quot;lastmodified&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L459">                    String formattedDate = lastModified.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+<span class="nc" id="L460">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L461">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L462">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L463">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L464">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L465">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L466">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L467">                    String title = rs.getString(&quot;title&quot;);</span>
+
+<span class="nc" id="L469">                    SurveyView surveyview = new SurveyView(idSurvey, formattedDate, colorHeader, imgHeader, icon,</span>
+                            imgIcon, privateStatus, activeStatus, publishStatus, title);
+
+<span class="nc" id="L472">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L474">                }</span>
+<span class="nc" id="L475">            } catch (Exception e) {</span>
+<span class="nc" id="L476">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L477">            }</span>
+<span class="nc" id="L478">        } catch (Exception e) {</span>
+<span class="nc" id="L479">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L480">        }</span>
+<span class="nc" id="L481">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationPublishStatus(String idUser, int limit, int pageNo) throws SQLException {
+<span class="nc" id="L486">        List&lt;SurveyView&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L487">        String sql = &quot;select survey_id,lastmodified, colorHeader,imgHeader, icon, imgLogo, privatestatus,activestatus, publishstatus,obj.val-&gt;&gt; 'title' AS  title from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON  obj.val -&gt;&gt;'id'='0' WHERE createdby = ? AND publishstatus = true ORDER BY survey_id DESC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L488">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L490">            p.setString(1, idUser);</span>
+            // p.setInt(1, limit);
+<span class="nc" id="L492">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L493">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L495" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L496">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L497">                    LocalDateTime lastModified = rs.getObject(&quot;lastmodified&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L498">                    String formattedDate = lastModified.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+<span class="nc" id="L499">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L500">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L501">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L502">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L503">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L504">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L505">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L506">                    String title = rs.getString(&quot;title&quot;);</span>
+
+<span class="nc" id="L508">                    SurveyView surveyview = new SurveyView(idSurvey, formattedDate, colorHeader, imgHeader, icon,</span>
+                            imgIcon, privateStatus, activeStatus, publishStatus, title);
+
+<span class="nc" id="L511">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L513">                }</span>
+<span class="nc" id="L514">            } catch (Exception e) {</span>
+<span class="nc" id="L515">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L516">            }</span>
+<span class="nc" id="L517">        } catch (Exception e) {</span>
+<span class="nc" id="L518">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L519">        }</span>
+<span class="nc" id="L520">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationPublishStatusSortByASC(String idUser, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L526">        List&lt;SurveyView&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L527">        String sql = &quot;select survey_id,lastmodified, colorHeader,imgHeader, icon, imgLogo, privatestatus,activestatus, publishstatus,obj.val-&gt;&gt; 'title' AS  title from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON  obj.val -&gt;&gt;'id'='0' WHERE createdby = ? AND publishstatus = true ORDER BY obj.val-&gt;&gt; 'title' ASC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L528">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L530">            p.setString(1, idUser);</span>
+            // p.setInt(1, limit);
+<span class="nc" id="L532">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L533">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L535" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L536">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L537">                    LocalDateTime lastModified = rs.getObject(&quot;lastmodified&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L538">                    String formattedDate = lastModified.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+<span class="nc" id="L539">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L540">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L541">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L542">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L543">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L544">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L545">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L546">                    String title = rs.getString(&quot;title&quot;);</span>
+
+<span class="nc" id="L548">                    SurveyView surveyview = new SurveyView(idSurvey, formattedDate, colorHeader, imgHeader, icon,</span>
+                            imgIcon, privateStatus, activeStatus, publishStatus, title);
+
+<span class="nc" id="L551">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L553">                }</span>
+<span class="nc" id="L554">            } catch (Exception e) {</span>
+<span class="nc" id="L555">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L556">            }</span>
+<span class="nc" id="L557">        } catch (Exception e) {</span>
+<span class="nc" id="L558">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L559">        }</span>
+<span class="nc" id="L560">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationPublishStatusSortByDESC(String idUser, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L566">        List&lt;SurveyView&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L567">        String sql = &quot;select survey_id,lastmodified, colorHeader,imgHeader, icon, imgLogo, privatestatus,activestatus, publishstatus,obj.val-&gt;&gt; 'title' AS  title from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON  obj.val -&gt;&gt;'id'='0' WHERE createdby = ? AND publishstatus = true ORDER BY obj.val-&gt;&gt; 'title' DESC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L568">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L570">            p.setString(1, idUser);</span>
+            // p.setInt(1, limit);
+<span class="nc" id="L572">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L573">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L575" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L576">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L577">                    LocalDateTime lastModified = rs.getObject(&quot;lastmodified&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L578">                    String formattedDate = lastModified.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+<span class="nc" id="L579">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L580">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L581">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L582">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L583">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L584">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L585">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L586">                    String title = rs.getString(&quot;title&quot;);</span>
+
+<span class="nc" id="L588">                    SurveyView surveyview = new SurveyView(idSurvey, formattedDate, colorHeader, imgHeader, icon,</span>
+                            imgIcon, privateStatus, activeStatus, publishStatus, title);
+
+<span class="nc" id="L591">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L593">                }</span>
+<span class="nc" id="L594">            } catch (Exception e) {</span>
+<span class="nc" id="L595">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L596">            }</span>
+<span class="nc" id="L597">        } catch (Exception e) {</span>
+<span class="nc" id="L598">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L599">        }</span>
+<span class="nc" id="L600">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationPublishStatusSortByDateASC(String idUser, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L606">        List&lt;SurveyView&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L607">        String sql = &quot;select survey_id,lastmodified, colorHeader,imgHeader, icon, imgLogo, privatestatus,activestatus, publishstatus,obj.val-&gt;&gt; 'title' AS  title from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON  obj.val -&gt;&gt;'id'='0' WHERE createdby = ? AND publishstatus = true ORDER BY lastmodified ASC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L608">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L610">            p.setString(1, idUser);</span>
+            // p.setInt(1, limit);
+<span class="nc" id="L612">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L613">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L615" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L616">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L617">                    LocalDateTime lastModified = rs.getObject(&quot;lastmodified&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L618">                    String formattedDate = lastModified.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+<span class="nc" id="L619">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L620">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L621">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L622">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L623">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L624">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L625">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L626">                    String title = rs.getString(&quot;title&quot;);</span>
+
+<span class="nc" id="L628">                    SurveyView surveyview = new SurveyView(idSurvey, formattedDate, colorHeader, imgHeader, icon,</span>
+                            imgIcon, privateStatus, activeStatus, publishStatus, title);
+
+<span class="nc" id="L631">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L633">                }</span>
+<span class="nc" id="L634">            } catch (Exception e) {</span>
+<span class="nc" id="L635">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L636">            }</span>
+<span class="nc" id="L637">        } catch (Exception e) {</span>
+<span class="nc" id="L638">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L639">        }</span>
+<span class="nc" id="L640">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationPublishStatusSortByDateDESC(String idUser, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L646">        List&lt;SurveyView&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L647">        String sql = &quot;select survey_id,lastmodified, colorHeader,imgHeader, icon, imgLogo, privatestatus,activestatus, publishstatus,obj.val-&gt;&gt; 'title' AS  title from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON  obj.val -&gt;&gt;'id'='0' WHERE createdby = ? AND publishstatus = true ORDER BY lastmodified DESC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L648">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L650">            p.setString(1, idUser);</span>
+            // p.setInt(1, limit);
+<span class="nc" id="L652">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L653">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L655" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L656">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L657">                    LocalDateTime lastModified = rs.getObject(&quot;lastmodified&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L658">                    String formattedDate = lastModified.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+<span class="nc" id="L659">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L660">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L661">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L662">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L663">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L664">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L665">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L666">                    String title = rs.getString(&quot;title&quot;);</span>
+
+<span class="nc" id="L668">                    SurveyView surveyview = new SurveyView(idSurvey, formattedDate, colorHeader, imgHeader, icon,</span>
+                            imgIcon, privateStatus, activeStatus, publishStatus, title);
+
+<span class="nc" id="L671">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L673">                }</span>
+<span class="nc" id="L674">            } catch (Exception e) {</span>
+<span class="nc" id="L675">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L676">            }</span>
+<span class="nc" id="L677">        } catch (Exception e) {</span>
+<span class="nc" id="L678">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L679">        }</span>
+<span class="nc" id="L680">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationSortDesc(String idUser, int limit, int pageNo) throws SQLException {
+<span class="nc" id="L685">        List&lt;SurveyView&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L686">        String sql = &quot;select survey_id, lastmodified, colorHeader, imgHeader, icon, imgLogo, privatestatus,activestatus, publishstatus,obj.val-&gt;&gt; 'title' AS title from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON obj.val -&gt;&gt;'id'='0'  WHERE createdBy = ?  ORDER BY obj.val-&gt;&gt; 'title' DESC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L687">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L689">            p.setString(1, idUser);</span>
+            // p.setInt(1, limit);
+
+<span class="nc" id="L692">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L693">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L695" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L696">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L697">                    LocalDateTime lastModified = rs.getObject(&quot;lastmodified&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L698">                    String formattedDate = lastModified.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+<span class="nc" id="L699">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L700">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L701">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L702">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L703">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L704">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L705">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L706">                    String title = rs.getString(&quot;title&quot;);</span>
+
+<span class="nc" id="L708">                    SurveyView surveyview = new SurveyView(idSurvey, formattedDate, colorHeader, imgHeader, icon,</span>
+                            imgIcon, privateStatus, activeStatus, publishStatus, title);
+<span class="nc" id="L710">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L712">                }</span>
+<span class="nc" id="L713">            } catch (Exception e) {</span>
+<span class="nc" id="L714">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L715">            }</span>
+<span class="nc" id="L716">        } catch (Exception e) {</span>
+<span class="nc" id="L717">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L718">        }</span>
+<span class="nc" id="L719">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationSortAsc(String idUser, int limit, int pageNo) throws SQLException {
+<span class="nc" id="L724">        List&lt;SurveyView&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L725">        String sql = &quot;select survey_id, lastmodified, colorHeader, imgHeader, icon, imgLogo, privatestatus,activestatus, publishstatus,obj.val-&gt;&gt; 'title' AS title from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON obj.val -&gt;&gt;'id'='0'  WHERE createdBy = ? ORDER BY obj.val-&gt;&gt; 'title' ASC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L726">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L728">            p.setString(1, idUser);</span>
+            // p.setInt(1, limit);
+<span class="nc" id="L730">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L731">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L733" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L734">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L735">                    LocalDateTime lastModified = rs.getObject(&quot;lastmodified&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L736">                    String formattedDate = lastModified.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+<span class="nc" id="L737">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L738">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L739">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L740">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L741">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L742">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L743">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L744">                    String title = rs.getString(&quot;title&quot;);</span>
+
+<span class="nc" id="L746">                    SurveyView surveyview = new SurveyView(idSurvey, formattedDate, colorHeader, imgHeader, icon,</span>
+                            imgIcon, privateStatus, activeStatus, publishStatus, title);
+
+<span class="nc" id="L749">                    surveyviews.add(surveyview);</span>
+<span class="nc" id="L750">                }</span>
+<span class="nc" id="L751">            } catch (Exception e) {</span>
+<span class="nc" id="L752">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L753">            }</span>
+<span class="nc" id="L754">        } catch (Exception e) {</span>
+<span class="nc" id="L755">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L756">        }</span>
+<span class="nc" id="L757">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationSortLastModifiedDesc(String idUser, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L763">        List&lt;SurveyView&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L764">        String sql = &quot;select survey_id, lastmodified, colorHeader, imgHeader, icon, imgLogo, privatestatus,activestatus, publishstatus,obj.val-&gt;&gt; 'title' AS title from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON obj.val -&gt;&gt;'id'='0' WHERE createdBy = ?  ORDER BY lastmodified DESC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L765">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L767">            p.setString(1, idUser);</span>
+            // p.setInt(1, limit);
+<span class="nc" id="L769">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L770">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L772" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L773">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L774">                    LocalDateTime lastModified = rs.getObject(&quot;lastmodified&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L775">                    String formattedDate = lastModified.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+<span class="nc" id="L776">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L777">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L778">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L779">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L780">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L781">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L782">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L783">                    String title = rs.getString(&quot;title&quot;);</span>
+
+<span class="nc" id="L785">                    SurveyView surveyview = new SurveyView(idSurvey, formattedDate, colorHeader, imgHeader, icon,</span>
+                            imgIcon, privateStatus, activeStatus, publishStatus, title);
+
+<span class="nc" id="L788">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L790">                }</span>
+<span class="nc" id="L791">            } catch (Exception e) {</span>
+<span class="nc" id="L792">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L793">            }</span>
+<span class="nc" id="L794">        } catch (Exception e) {</span>
+<span class="nc" id="L795">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L796">        }</span>
+<span class="nc" id="L797">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationSortLastModifiedAsc(String idUser, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L803">        List&lt;SurveyView&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L804">        String sql = &quot;select survey_id,lastmodified, colorHeader, imgHeader, icon, imgLogo, privatestatus,activestatus, publishstatus,obj.val-&gt;&gt; 'title' AS title from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON obj.val -&gt;&gt;'id'='0' WHERE createdBy = ? ORDER BY lastmodified ASC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L805">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L807">            p.setString(1, idUser);</span>
+            // p.setInt(1, limit);
+<span class="nc" id="L809">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L810">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L812" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L813">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L814">                    LocalDateTime lastModified = rs.getObject(&quot;lastmodified&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L815">                    String formattedDate = lastModified.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+<span class="nc" id="L816">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L817">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L818">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L819">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L820">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L821">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L822">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L823">                    String title = rs.getString(&quot;title&quot;);</span>
+
+<span class="nc" id="L825">                    SurveyView surveyview = new SurveyView(idSurvey, formattedDate, colorHeader, imgHeader, icon,</span>
+                            imgIcon, privateStatus, activeStatus, publishStatus, title);
+
+<span class="nc" id="L828">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L830">                }</span>
+<span class="nc" id="L831">            } catch (Exception e) {</span>
+<span class="nc" id="L832">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L833">            }</span>
+<span class="nc" id="L834">        } catch (Exception e) {</span>
+<span class="nc" id="L835">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L836">        }</span>
+<span class="nc" id="L837">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyViewAssign&gt; surveyPaginationAssign(String userId, int limit, int pageNo) throws SQLException {
+<span class="nc" id="L842">        List&lt;SurveyViewAssign&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L843">        String sql = &quot;select survey.survey_id, survey.colorHeader, survey.imgHeader, survey.icon, survey.imgLogo, survey.privatestatus,survey.activestatus, survey.publishstatus, obj.val-&gt;&gt; 'title' AS title, user_survey.submitresponse, user_survey.dismissStatus, user_survey.lastmodifiedAssign from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON obj.val -&gt;&gt; 'id'='0' join user_survey ON survey.survey_id= user_survey.survey_id WHERE user_id = ? AND submitresponse = false AND dismissStatus =  false   ORDER BY survey_id DESC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L844">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L846">            p.setString(1, userId);</span>
+            // p.setInt(1, limit);
+<span class="nc" id="L848">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L849">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L851" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L852">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L853">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L854">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L855">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L856">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L857">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L858">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L859">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L860">                    String title = rs.getString(&quot;title&quot;);</span>
+<span class="nc" id="L861">                    Boolean submitStatus = rs.getBoolean(&quot;submitresponse&quot;);</span>
+<span class="nc" id="L862">                    Boolean dismissStatus = rs.getBoolean(&quot;dismissStatus&quot;);</span>
+<span class="nc" id="L863">                    LocalDateTime lastModifiedAssign = rs.getObject(&quot;lastmodifiedAssign&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L864">                    String formattedDate = lastModifiedAssign.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+
+<span class="nc" id="L866">                    SurveyViewAssign surveyview = new SurveyViewAssign(idSurvey, colorHeader, imgHeader, icon, imgIcon,</span>
+                            privateStatus, activeStatus, publishStatus, title, submitStatus, dismissStatus,
+                            formattedDate);
+
+<span class="nc" id="L870">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L872">                }</span>
+<span class="nc" id="L873">            } catch (Exception e) {</span>
+<span class="nc" id="L874">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L875">            }</span>
+<span class="nc" id="L876">        } catch (Exception e) {</span>
+<span class="nc" id="L877">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L878">        }</span>
+<span class="nc" id="L879">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyViewAssign&gt; surveyPaginationAssignPrivateStatus(String userId, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L885">        List&lt;SurveyViewAssign&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L886">        String sql = &quot;select survey.survey_id,  survey.colorHeader, survey.imgHeader, survey.icon, survey.imgLogo, survey.privatestatus,survey.activestatus, survey.publishstatus, obj.val-&gt;&gt; 'title' AS title, user_survey.submitresponse,user_survey.dismissStatus, user_survey.lastmodifiedAssign from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON obj.val -&gt;&gt; 'id'='0' join user_survey ON survey.survey_id= user_survey.survey_id WHERE user_id = ?  AND privatestatus = ? ORDER BY survey_id DESC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L887">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L889">            p.setString(1, userId);</span>
+            // p.setInt(1, limit);
+
+<span class="nc" id="L892">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L893">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L895" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L896">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L897">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L898">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L899">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L900">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L901">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L902">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L903">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L904">                    String title = rs.getString(&quot;title&quot;);</span>
+<span class="nc" id="L905">                    Boolean submitStatus = rs.getBoolean(&quot;submitresponse&quot;);</span>
+<span class="nc" id="L906">                    Boolean dismissStatus = rs.getBoolean(&quot;dismissStatus&quot;);</span>
+<span class="nc" id="L907">                    LocalDateTime lastModifiedAssign = rs.getObject(&quot;lastmodifiedAssign&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L908">                    String formattedDate = lastModifiedAssign.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+
+<span class="nc" id="L910">                    SurveyViewAssign surveyview = new SurveyViewAssign(idSurvey, colorHeader, imgHeader, icon, imgIcon,</span>
+                            privateStatus, activeStatus, publishStatus, title, submitStatus, dismissStatus,
+                            formattedDate);
+
+<span class="nc" id="L914">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L916">                }</span>
+<span class="nc" id="L917">            } catch (Exception e) {</span>
+<span class="nc" id="L918">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L919">            }</span>
+<span class="nc" id="L920">        } catch (Exception e) {</span>
+<span class="nc" id="L921">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L922">        }</span>
+<span class="nc" id="L923">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyViewAssign&gt; surveyPaginationAssignPublicStatus(String userId, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L929">        List&lt;SurveyViewAssign&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L930">        String sql = &quot;select survey.survey_id, survey.colorHeader, survey.imgHeader,survey.icon, survey.imgLogo, survey.privatestatus,survey.activestatus, survey.publishstatus, obj.val-&gt;&gt; 'title' AS title,user_survey.submitresponse,user_survey.dismissStatus,  user_survey.lastmodifiedAssign from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON obj.val -&gt;&gt; 'id'='0' join user_survey ON survey.survey_id= user_survey.survey_id WHERE user_id = ? AND privatestatus = false ORDER BY survey_id DESC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L931">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L933">            p.setString(1, userId);</span>
+            // p.setInt(1, limit);
+<span class="nc" id="L935">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L936">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L938" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L939">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L940">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L941">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L942">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L943">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L944">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L945">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L946">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L947">                    String title = rs.getString(&quot;title&quot;);</span>
+<span class="nc" id="L948">                    Boolean submitStatus = rs.getBoolean(&quot;submitresponse&quot;);</span>
+<span class="nc" id="L949">                    Boolean dismissStatus = rs.getBoolean(&quot;dismissStatus&quot;);</span>
+<span class="nc" id="L950">                    LocalDateTime lastModifiedAssign = rs.getObject(&quot;lastmodifiedAssign&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L951">                    String formattedDate = lastModifiedAssign.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+
+<span class="nc" id="L953">                    SurveyViewAssign surveyview = new SurveyViewAssign(idSurvey, colorHeader, imgHeader, icon, imgIcon,</span>
+                            privateStatus, activeStatus, publishStatus, title, submitStatus, dismissStatus,
+                            formattedDate);
+
+<span class="nc" id="L957">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L959">                }</span>
+<span class="nc" id="L960">            } catch (Exception e) {</span>
+<span class="nc" id="L961">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L962">            }</span>
+<span class="nc" id="L963">        } catch (Exception e) {</span>
+<span class="nc" id="L964">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L965">        }</span>
+<span class="nc" id="L966">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyViewAssign&gt; surveyPaginationAssignAnswered(String userId, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L972">        List&lt;SurveyViewAssign&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L973">        String sql = &quot;select survey.survey_id, survey.colorHeader, survey.imgHeader, survey.icon, survey.imgLogo, survey.privatestatus,survey.activestatus, survey.publishstatus, obj.val-&gt;&gt; 'title' AS title, user_survey.submitresponse, user_survey.dismissStatus, user_survey.lastmodifiedAssign from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON obj.val -&gt;&gt; 'id'='0' join user_survey ON survey.survey_id= user_survey.survey_id WHERE user_id = ? AND submitresponse = true  ORDER BY survey_id DESC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L974">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L976">            p.setString(1, userId);</span>
+            // p.setInt(1, limit);
+<span class="nc" id="L978">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L979">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L981" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L982">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L983">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L984">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L985">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L986">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L987">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L988">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L989">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L990">                    String title = rs.getString(&quot;title&quot;);</span>
+<span class="nc" id="L991">                    Boolean submitStatus = rs.getBoolean(&quot;submitresponse&quot;);</span>
+<span class="nc" id="L992">                    Boolean dismissStatus = rs.getBoolean(&quot;dismissStatus&quot;);</span>
+<span class="nc" id="L993">                    LocalDateTime lastModifiedAssign = rs.getObject(&quot;lastmodifiedAssign&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L994">                    String formattedDate = lastModifiedAssign.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+
+<span class="nc" id="L996">                    SurveyViewAssign surveyview = new SurveyViewAssign(idSurvey, colorHeader, imgHeader, icon, imgIcon,</span>
+                            privateStatus, activeStatus, publishStatus, title, submitStatus, dismissStatus,
+                            formattedDate);
+
+<span class="nc" id="L1000">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L1002">                }</span>
+<span class="nc" id="L1003">            } catch (Exception e) {</span>
+<span class="nc" id="L1004">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L1005">            }</span>
+<span class="nc" id="L1006">        } catch (Exception e) {</span>
+<span class="nc" id="L1007">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L1008">        }</span>
+<span class="nc" id="L1009">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyViewAssign&gt; surveyPaginationAssignDismiss(String userId, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L1015">        List&lt;SurveyViewAssign&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L1016">        String sql = &quot;select survey.survey_id, survey.colorHeader, survey.imgHeader, survey.icon, survey.imgLogo, survey.privatestatus,survey.activestatus, survey.publishstatus, obj.val-&gt;&gt; 'title' AS title, user_survey.submitresponse, user_survey.dismissStatus, user_survey.lastmodifiedAssign from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON obj.val -&gt;&gt; 'id'='0' join user_survey ON survey.survey_id= user_survey.survey_id WHERE user_id = ? AND dismissStatus = true  ORDER BY survey_id DESC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L1017">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L1019">            p.setString(1, userId);</span>
+            // p.setInt(1, limit);
+<span class="nc" id="L1021">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L1022">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L1024" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L1025">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L1026">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L1027">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L1028">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L1029">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L1030">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L1031">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L1032">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L1033">                    String title = rs.getString(&quot;title&quot;);</span>
+<span class="nc" id="L1034">                    Boolean submitStatus = rs.getBoolean(&quot;submitresponse&quot;);</span>
+<span class="nc" id="L1035">                    Boolean dismissStatus = rs.getBoolean(&quot;dismissStatus&quot;);</span>
+<span class="nc" id="L1036">                    LocalDateTime lastModifiedAssign = rs.getObject(&quot;lastmodifiedAssign&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L1037">                    String formattedDate = lastModifiedAssign.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+
+
+<span class="nc" id="L1040">                    SurveyViewAssign surveyview = new SurveyViewAssign(idSurvey, colorHeader, imgHeader, icon, imgIcon,</span>
+                            privateStatus, activeStatus, publishStatus, title, submitStatus, dismissStatus,
+                            formattedDate);
+
+<span class="nc" id="L1044">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L1046">                }</span>
+<span class="nc" id="L1047">            } catch (Exception e) {</span>
+<span class="nc" id="L1048">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L1049">            }</span>
+<span class="nc" id="L1050">        } catch (Exception e) {</span>
+<span class="nc" id="L1051">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L1052">        }</span>
+<span class="nc" id="L1053">        return surveyviews;</span>
+
+    }
+
+    public int totalCount(String idUser) throws SQLException {
+<span class="nc" id="L1058">        String sql = &quot;SELECT COUNT (*) FROM SURVEY Where createdBy = ?&quot;;</span>
+<span class="nc" id="L1059">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql)) {</span>
+<span class="nc" id="L1060">            p.setString(1, idUser);</span>
+<span class="nc" id="L1061">            ResultSet rs = p.executeQuery();</span>
+
+<span class="nc bnc" id="L1063" title="All 2 branches missed.">            if (rs.next()) {</span>
+<span class="nc" id="L1064">                return rs.getInt(&quot;count&quot;);</span>
+
+            }
+<span class="nc" id="L1067">        } catch (Exception e) {</span>
+<span class="nc" id="L1068">            throw new SQLException(&quot;The Page Number is Wrong.&quot;);</span>
+<span class="nc" id="L1069">        }</span>
+<span class="nc" id="L1070">        return 0;</span>
+
+    }
+
+    public int totalCountSaveStatus(String idUser) throws SQLException {
+<span class="nc" id="L1075">        String sql = &quot;SELECT COUNT (*) FROM SURVEY Where createdBy = ? AND publishstatus = false&quot;;</span>
+<span class="nc" id="L1076">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql)) {</span>
+<span class="nc" id="L1077">            p.setString(1, idUser);</span>
+<span class="nc" id="L1078">            ResultSet rs = p.executeQuery();</span>
+
+<span class="nc bnc" id="L1080" title="All 2 branches missed.">            if (rs.next()) {</span>
+<span class="nc" id="L1081">                return rs.getInt(&quot;count&quot;);</span>
+
+            }
+<span class="nc" id="L1084">        } catch (Exception e) {</span>
+<span class="nc" id="L1085">            throw new SQLException(&quot;The Page Number is Wrong.&quot;);</span>
+<span class="nc" id="L1086">        }</span>
+<span class="nc" id="L1087">        return 0;</span>
+
+    }
+
+    public int totalCountPublishStatus(String idUser) throws SQLException {
+<span class="nc" id="L1092">        String sql = &quot;SELECT COUNT (*) FROM SURVEY Where createdBy = ? AND publishstatus = true&quot;;</span>
+<span class="nc" id="L1093">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql)) {</span>
+<span class="nc" id="L1094">            p.setString(1, idUser);</span>
+<span class="nc" id="L1095">            ResultSet rs = p.executeQuery();</span>
+
+<span class="nc bnc" id="L1097" title="All 2 branches missed.">            if (rs.next()) {</span>
+<span class="nc" id="L1098">                return rs.getInt(&quot;count&quot;);</span>
+
+            }
+<span class="nc" id="L1101">        } catch (Exception e) {</span>
+<span class="nc" id="L1102">            throw new SQLException(&quot;The Page Number is Wrong.&quot;);</span>
+<span class="nc" id="L1103">        }</span>
+<span class="nc" id="L1104">        return 0;</span>
+
+    }
+
+    public int totalCountAssign(String userId) throws SQLException {
+<span class="nc" id="L1109">        String sql = &quot;SELECT COUNT (*) FROM user_survey Where user_id = ? AND submitresponse = false &quot;;</span>
+<span class="nc" id="L1110">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql)) {</span>
+<span class="nc" id="L1111">            p.setString(1, userId);</span>
+<span class="nc" id="L1112">            ResultSet rs = p.executeQuery();</span>
+
+<span class="nc bnc" id="L1114" title="All 2 branches missed.">            if (rs.next()) {</span>
+<span class="nc" id="L1115">                return rs.getInt(&quot;count&quot;);</span>
+
+            }
+<span class="nc" id="L1118">        } catch (Exception e) {</span>
+<span class="nc" id="L1119">            throw new SQLException(&quot;The Page Number is Wrong.&quot;);</span>
+<span class="nc" id="L1120">        }</span>
+<span class="nc" id="L1121">        return 0;</span>
+
+    }
+
+    public int totalCountAssignPrivateStatus(String userId) throws SQLException {
+<span class="nc" id="L1126">        String sql = &quot;select count (*) from user_survey join survey on survey.survey_id = user_survey.survey_id where   user_id = ? AND privateStatus = true&quot;;</span>
+<span class="nc" id="L1127">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql)) {</span>
+<span class="nc" id="L1128">            p.setString(1, userId);</span>
+<span class="nc" id="L1129">            ResultSet rs = p.executeQuery();</span>
+
+<span class="nc bnc" id="L1131" title="All 2 branches missed.">            if (rs.next()) {</span>
+<span class="nc" id="L1132">                return rs.getInt(&quot;count&quot;);</span>
+
+            }
+<span class="nc" id="L1135">        } catch (Exception e) {</span>
+<span class="nc" id="L1136">            throw new SQLException(&quot;The Page Number is Wrong.&quot;);</span>
+<span class="nc" id="L1137">        }</span>
+<span class="nc" id="L1138">        return 0;</span>
+    }
+
+    public int totalCountAssignPublicStatus(String userId) throws SQLException {
+<span class="nc" id="L1142">        String sql = &quot;select count (*) from user_survey join survey on survey.survey_id = user_survey.survey_id where   user_id = ? AND privateStatus = false&quot;;</span>
+<span class="nc" id="L1143">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql)) {</span>
+<span class="nc" id="L1144">            p.setString(1, userId);</span>
+<span class="nc" id="L1145">            ResultSet rs = p.executeQuery();</span>
+
+<span class="nc bnc" id="L1147" title="All 2 branches missed.">            if (rs.next()) {</span>
+<span class="nc" id="L1148">                return rs.getInt(&quot;count&quot;);</span>
+
+            }
+<span class="nc" id="L1151">        } catch (Exception e) {</span>
+<span class="nc" id="L1152">            throw new SQLException(&quot;The Page Number is Wrong.&quot;);</span>
+<span class="nc" id="L1153">        }</span>
+<span class="nc" id="L1154">        return 0;</span>
+    }
+
+    public int totalCountAssignAnsweredStatus(String userId) throws SQLException {
+<span class="nc" id="L1158">        String sql = &quot;SELECT COUNT (*) FROM user_survey Where user_id = ? AND submitresponse = true &quot;;</span>
+<span class="nc" id="L1159">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql)) {</span>
+<span class="nc" id="L1160">            p.setString(1, userId);</span>
+<span class="nc" id="L1161">            ResultSet rs = p.executeQuery();</span>
+
+<span class="nc bnc" id="L1163" title="All 2 branches missed.">            if (rs.next()) {</span>
+<span class="nc" id="L1164">                return rs.getInt(&quot;count&quot;);</span>
+
+            }
+<span class="nc" id="L1167">        } catch (Exception e) {</span>
+<span class="nc" id="L1168">            throw new SQLException(&quot;The Page Number is Wrong.&quot;);</span>
+<span class="nc" id="L1169">        }</span>
+<span class="nc" id="L1170">        return 0;</span>
+    }
+
+    public int totalCountAssignDismissStatus(String userId) throws SQLException {
+<span class="nc" id="L1174">        String sql = &quot;SELECT COUNT (*) FROM user_survey Where user_id = ? AND dismissStatus = true&quot;;</span>
+<span class="nc" id="L1175">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql)) {</span>
+<span class="nc" id="L1176">            p.setString(1, userId);</span>
+<span class="nc" id="L1177">            ResultSet rs = p.executeQuery();</span>
+
+<span class="nc bnc" id="L1179" title="All 2 branches missed.">            if (rs.next()) {</span>
+<span class="nc" id="L1180">                return rs.getInt(&quot;count&quot;);</span>
+
+            }
+<span class="nc" id="L1183">        } catch (Exception e) {</span>
+<span class="nc" id="L1184">            throw new SQLException(&quot;The Page Number is Wrong.&quot;);</span>
+<span class="nc" id="L1185">        }</span>
+<span class="nc" id="L1186">        return 0;</span>
+    }
+
+    public List&lt;SurveyViewAssign&gt; surveyPaginationAssignSortByASC(String userId, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L1191">        List&lt;SurveyViewAssign&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L1192">        String sql = &quot;select survey.survey_id, survey.colorHeader, survey.imgHeader, survey.icon, survey.imgLogo, survey.privatestatus,survey.activestatus, survey.publishstatus, obj.val-&gt;&gt; 'title' AS title, user_survey.submitresponse, user_survey.dismissStatus, user_survey.lastmodifiedAssign from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON obj.val -&gt;&gt; 'id'='0' join user_survey ON survey.survey_id= user_survey.survey_id WHERE user_id = ? AND submitresponse = false  ORDER BY obj.val-&gt;&gt; 'title' DESC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L1193">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L1195">            p.setString(1, userId);</span>
+            // p.setInt(1, limit);
+<span class="nc" id="L1197">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L1198">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L1200" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L1201">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L1202">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L1203">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L1204">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L1205">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L1206">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L1207">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L1208">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L1209">                    String title = rs.getString(&quot;title&quot;);</span>
+<span class="nc" id="L1210">                    Boolean submitStatus = rs.getBoolean(&quot;submitresponse&quot;);</span>
+<span class="nc" id="L1211">                    Boolean dismissStatus = rs.getBoolean(&quot;dismissStatus&quot;);</span>
+<span class="nc" id="L1212">                    LocalDateTime lastModifiedAssign = rs.getObject(&quot;lastmodifiedAssign&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L1213">                    String formattedDate = lastModifiedAssign.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+
+
+<span class="nc" id="L1216">                    SurveyViewAssign surveyview = new SurveyViewAssign(idSurvey, colorHeader, imgHeader, icon, imgIcon,</span>
+                            privateStatus, activeStatus, publishStatus, title, submitStatus, dismissStatus,
+                            formattedDate);
+
+<span class="nc" id="L1220">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L1222">                }</span>
+<span class="nc" id="L1223">            } catch (Exception e) {</span>
+<span class="nc" id="L1224">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L1225">            }</span>
+<span class="nc" id="L1226">        } catch (Exception e) {</span>
+<span class="nc" id="L1227">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L1228">        }</span>
+<span class="nc" id="L1229">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyViewAssign&gt; surveyPaginationAssignSortByDESC(String userId, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L1235">        List&lt;SurveyViewAssign&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L1236">        String sql = &quot;select survey.survey_id, survey.colorHeader, survey.imgHeader, survey.icon, survey.imgLogo, survey.privatestatus,survey.activestatus, survey.publishstatus, obj.val-&gt;&gt; 'title' AS title, user_survey.submitresponse, user_survey.dismissStatus, user_survey.lastmodifiedAssign from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON obj.val -&gt;&gt; 'id'='0' join user_survey ON survey.survey_id= user_survey.survey_id WHERE user_id = ? AND submitresponse = false  ORDER BY obj.val-&gt;&gt; 'title' ASC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L1237">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L1239">            p.setString(1, userId);</span>
+            // p.setInt(1, limit);
+<span class="nc" id="L1241">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L1242">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L1244" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L1245">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L1246">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L1247">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L1248">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L1249">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L1250">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L1251">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L1252">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L1253">                    String title = rs.getString(&quot;title&quot;);</span>
+<span class="nc" id="L1254">                    Boolean submitStatus = rs.getBoolean(&quot;submitresponse&quot;);</span>
+<span class="nc" id="L1255">                    Boolean dismissStatus = rs.getBoolean(&quot;dismissStatus&quot;);</span>
+<span class="nc" id="L1256">                    LocalDateTime lastModifiedAssign = rs.getObject(&quot;lastmodifiedAssign&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L1257">                    String formattedDate = lastModifiedAssign.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+
+
+<span class="nc" id="L1260">                    SurveyViewAssign surveyview = new SurveyViewAssign(idSurvey, colorHeader, imgHeader, icon, imgIcon,</span>
+                            privateStatus, activeStatus, publishStatus, title, submitStatus, dismissStatus,
+                            formattedDate);
+
+<span class="nc" id="L1264">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L1266">                }</span>
+<span class="nc" id="L1267">            } catch (Exception e) {</span>
+<span class="nc" id="L1268">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L1269">            }</span>
+<span class="nc" id="L1270">        } catch (Exception e) {</span>
+<span class="nc" id="L1271">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L1272">        }</span>
+<span class="nc" id="L1273">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyViewAssign&gt; surveyPaginationAssignSortByTimeASC(String userId, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L1279">        List&lt;SurveyViewAssign&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L1280">        String sql = &quot;select survey.survey_id, survey.colorHeader, survey.imgHeader, survey.icon, survey.imgLogo, survey.privatestatus,survey.activestatus, survey.publishstatus, obj.val-&gt;&gt; 'title' AS title, user_survey.submitresponse, user_survey.dismissStatus, user_survey.lastmodifiedAssign from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON obj.val -&gt;&gt; 'id'='0' join user_survey ON survey.survey_id= user_survey.survey_id WHERE user_id = ? AND submitresponse = false  ORDER BY user_survey.lastmodifiedAssign ASC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L1281">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L1283">            p.setString(1, userId);</span>
+            // p.setInt(1, limit);
+<span class="nc" id="L1285">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L1286">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L1288" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L1289">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L1290">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L1291">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L1292">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L1293">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L1294">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L1295">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L1296">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L1297">                    String title = rs.getString(&quot;title&quot;);</span>
+<span class="nc" id="L1298">                    Boolean submitStatus = rs.getBoolean(&quot;submitresponse&quot;);</span>
+<span class="nc" id="L1299">                    Boolean dismissStatus = rs.getBoolean(&quot;dismissStatus&quot;);</span>
+<span class="nc" id="L1300">                    LocalDateTime lastModifiedAssign = rs.getObject(&quot;lastmodifiedAssign&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L1301">                    String formattedDate = lastModifiedAssign.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+
+
+<span class="nc" id="L1304">                    SurveyViewAssign surveyview = new SurveyViewAssign(idSurvey, colorHeader, imgHeader, icon, imgIcon,</span>
+                            privateStatus, activeStatus, publishStatus, title, submitStatus, dismissStatus,
+                            formattedDate);
+
+<span class="nc" id="L1308">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L1310">                }</span>
+<span class="nc" id="L1311">            } catch (Exception e) {</span>
+<span class="nc" id="L1312">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L1313">            }</span>
+<span class="nc" id="L1314">        } catch (Exception e) {</span>
+<span class="nc" id="L1315">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L1316">        }</span>
+<span class="nc" id="L1317">        return surveyviews;</span>
+
+    }
+
+    public List&lt;SurveyViewAssign&gt; surveyPaginationAssignSortByTimeDESC(String userId, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L1323">        List&lt;SurveyViewAssign&gt; surveyviews = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L1324">        String sql = &quot;select survey.survey_id, survey.colorHeader, survey.imgHeader, survey.icon, survey.imgLogo, survey.privatestatus,survey.activestatus, survey.publishstatus, obj.val-&gt;&gt; 'title' AS title, user_survey.submitresponse, user_survey.dismissStatus, user_survey.lastmodifiedAssign from survey JOIN LATERAL jsonb_array_elements(pages) obj(val) ON obj.val -&gt;&gt; 'id'='0' join user_survey ON survey.survey_id= user_survey.survey_id WHERE user_id = ? AND submitresponse = false  ORDER BY user_survey.lastmodifiedAssign DESC LIMIT 8 OFFSET ?&quot;;</span>
+<span class="nc" id="L1325">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L1327">            p.setString(1, userId);</span>
+            // p.setInt(1, limit);
+<span class="nc" id="L1329">            p.setInt(2, (pageNo - 1) * limit);</span>
+<span class="nc" id="L1330">            try (ResultSet rs = p.executeQuery()) {</span>
+
+<span class="nc bnc" id="L1332" title="All 2 branches missed.">                while (rs.next()) {</span>
+<span class="nc" id="L1333">                    int idSurvey = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L1334">                    String colorHeader = rs.getString(&quot;colorHeader&quot;);</span>
+<span class="nc" id="L1335">                    String imgHeader = rs.getString(&quot;imgHeader&quot;);</span>
+<span class="nc" id="L1336">                    String icon = rs.getString(&quot;icon&quot;);</span>
+<span class="nc" id="L1337">                    String imgIcon = rs.getString(&quot;imgLogo&quot;);</span>
+<span class="nc" id="L1338">                    Boolean privateStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L1339">                    Boolean activeStatus = rs.getBoolean(&quot;privatestatus&quot;);</span>
+<span class="nc" id="L1340">                    Boolean publishStatus = rs.getBoolean(&quot;publishstatus&quot;);</span>
+<span class="nc" id="L1341">                    String title = rs.getString(&quot;title&quot;);</span>
+<span class="nc" id="L1342">                    Boolean submitStatus = rs.getBoolean(&quot;submitresponse&quot;);</span>
+<span class="nc" id="L1343">                    Boolean dismissStatus = rs.getBoolean(&quot;dismissStatus&quot;);</span>
+<span class="nc" id="L1344">                    LocalDateTime lastModifiedAssign = rs.getObject(&quot;lastmodifiedAssign&quot;, LocalDateTime.class);</span>
+<span class="nc" id="L1345">                    String formattedDate = lastModifiedAssign.format(DateTimeFormatter.ofPattern(&quot;dd-mm-yyyy&quot;));</span>
+
+
+<span class="nc" id="L1348">                    SurveyViewAssign surveyview = new SurveyViewAssign(idSurvey, colorHeader, imgHeader, icon, imgIcon,</span>
+                            privateStatus, activeStatus, publishStatus, title, submitStatus, dismissStatus,
+                            formattedDate);
+
+<span class="nc" id="L1352">                    surveyviews.add(surveyview);</span>
+
+<span class="nc" id="L1354">                }</span>
+<span class="nc" id="L1355">            } catch (Exception e) {</span>
+<span class="nc" id="L1356">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L1357">            }</span>
+<span class="nc" id="L1358">        } catch (Exception e) {</span>
+<span class="nc" id="L1359">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L1360">        }</span>
+<span class="nc" id="L1361">        return surveyviews;</span>
+
+    }
+
+    public void insertResponse(Response response, List&lt;String&gt; user_id) {
+<span class="fc" id="L1366">        String sql = &quot;INSERT INTO response_temp ( response_temp_survey_id,response_temp_page_id,question_temp_id, answer,  optionanswer, questionType, response_temp_user_id) VALUES (?,?,?,?,to_jsonb(?::jsonb),?,?)&quot;;</span>
+
+<span class="fc" id="L1368">        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {</span>
+
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+<span class="fc" id="L1371">                ps.setString(7, user_id.get(i));</span>
+<span class="fc" id="L1372">                ps.setInt(1, response.getSurveyId());</span>
+<span class="fc" id="L1373">                ps.setInt(2, response.getPageId());</span>
+<span class="fc" id="L1374">                ps.setInt(3, response.getQuestionId());</span>
+<span class="fc" id="L1375">                ps.setString(4, response.getAnswer());</span>
+                // ps.setDate(5, response.getDateAnswer());
+
+<span class="fc" id="L1378">                Gson gson = new Gson();</span>
+<span class="fc" id="L1379">                String optionAnswer = gson.toJson(response.getOptionAnswers());</span>
+<span class="fc" id="L1380">                ps.setString(5, optionAnswer);</span>
+<span class="fc" id="L1381">                ps.setString(6, response.getQuestionType());</span>
+<span class="fc" id="L1382">            }</span>
+
+            public int getBatchSize() {
+<span class="fc" id="L1385">                return user_id.size();</span>
+            }
+
+        });
+
+<span class="fc" id="L1390">    }</span>
+
+    public void assignSurvey(int idSurvey, List&lt;String&gt; user_id) {
+<span class="fc" id="L1393">        String sql = &quot;INSERT INTO user_survey(user_id, survey_id, submitresponse,dismissStatus, lastmodifiedAssign) Values(?,?,?,?,?)&quot;;</span>
+
+<span class="fc" id="L1395">        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {</span>
+
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+<span class="fc" id="L1398">                ps.setString(1, user_id.get(i));</span>
+<span class="fc" id="L1399">                ps.setInt(2, idSurvey);</span>
+<span class="fc" id="L1400">                ps.setBoolean(3, false);</span>
+<span class="fc" id="L1401">                ps.setBoolean(4, false);</span>
+<span class="fc" id="L1402">                ps.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now()));</span>
+<span class="fc" id="L1403">            }</span>
+
+            public int getBatchSize() {
+<span class="fc" id="L1406">                return user_id.size();</span>
+            }
+
+        });
+
+<span class="fc" id="L1411">    }</span>
+
+    public void updateResponseCheckbox(Response response) {
+
+<span class="nc" id="L1415">        String sql = &quot;UPDATE Response_temp SET answer = ?, optionanswer = to_jsonb(?::jsonb) WHERE response_temp_survey_id = ? AND response_temp_page_id = ? AND question_temp_id = ? AND response_temp_user_id = ?&quot;;</span>
+<span class="nc" id="L1416">        Gson gson = new Gson();</span>
+<span class="nc" id="L1417">        String json = gson.toJson(response.getOptionAnswers());</span>
+<span class="nc" id="L1418">        Object[] params = { response.getAnswer(), json, response.getSurveyId(), response.getPageId(),</span>
+<span class="nc" id="L1419">                response.getQuestionId(), response.getUserId() };</span>
+
+<span class="nc" id="L1421">        jdbcTemplate.update(sql, params);</span>
+
+<span class="nc" id="L1423">    }</span>
+
+    public void updateResponseBesideCheckbox(Response response) {
+
+<span class="nc" id="L1427">        String sql = &quot;UPDATE Response_temp SET answer = ?, dateanswer = ? WHERE response_temp_survey_id = ? AND response_temp_page_id = ? AND question_temp_id = ? AND response_temp_user_id = ?&quot;;</span>
+<span class="nc" id="L1428">        Gson gson = new Gson();</span>
+<span class="nc" id="L1429">        String json = gson.toJson(response.getAnswer());</span>
+<span class="nc" id="L1430">        Object[] params = { response.getAnswer(), response.getDateAnswer(), response.getSurveyId(),</span>
+<span class="nc" id="L1431">                response.getPageId(), response.getQuestionId(), response.getUserId() };</span>
+
+<span class="nc" id="L1433">        jdbcTemplate.update(sql, params);</span>
+<span class="nc" id="L1434">    }</span>
+
+    public Boolean chechResponse(int idSurvey) {
+
+<span class="fc" id="L1438">        String sql = &quot;SELECT EXISTS (SELECT answer from response_temp WHERE response_temp_survey_id = ?) &quot;;</span>
+<span class="fc" id="L1439">        boolean exist = getJdbcTemplate().queryForObject(sql, new Object[] { idSurvey }, Boolean.class);</span>
+
+<span class="fc" id="L1441">        return exist;</span>
+    }
+
+    public void updateStatusSurvey(Survey survey) {
+
+<span class="fc" id="L1446">        String sql = &quot;UPDATE Survey SET privatestatus = ?, activestatus = ?, publishstatus =? WHERE survey_id = ?&quot;;</span>
+
+<span class="fc" id="L1448">        Object[] params = { survey.getPrivateStatus(), survey.getActiveStatus(), survey.getPublishStatus(),</span>
+<span class="fc" id="L1449">                survey.getIdSurvey() };</span>
+
+<span class="fc" id="L1451">        jdbcTemplate.update(sql, params);</span>
+
+<span class="fc" id="L1453">    }</span>
+
+    public void updateSubmitStatus(int idSurvey, String idUser, boolean submitStatus) {
+
+<span class="nc" id="L1457">        String sql = &quot;UPDATE user_survey SET submitresponse = ? WHERE user_id = ? AND survey_id = ?&quot;;</span>
+<span class="nc" id="L1458">        Object[] params = { submitStatus, idUser, idSurvey };</span>
+
+<span class="nc" id="L1460">        jdbcTemplate.update(sql, params);</span>
+
+<span class="nc" id="L1462">    }</span>
+
+    public void dismissSurvey(String userId, int surveyId) {
+
+<span class="nc" id="L1466">        String sql = &quot;UPDATE user_survey SET dismissStatus = ? WHERE survey_id = ? AND user_id = ?&quot;;</span>
+<span class="nc" id="L1467">        Object[] params = { true, surveyId, userId };</span>
+
+<span class="nc" id="L1469">        jdbcTemplate.update(sql, params);</span>
+
+<span class="nc" id="L1471">    }</span>
+
+    public Response loadResponse(String userId, int surveyId, int pageId, int questionId) throws Exception {
+
+<span class="nc" id="L1475">        String sql = &quot;select * from response where  response_survey_id = ? AND response_page_id = ? AND question_id = ? AND response_user_id = ?&quot;;</span>
+
+<span class="nc" id="L1477">            return jdbcTemplate.queryForObject(sql, new Object[] { surveyId, pageId, questionId, userId }, new ResponseRowMapper());</span>
+
+    }
+    public int checkNumberOfResponse(String userId, int surveyId, int pageId, int questionId) throws Exception {
+
+<span class="nc" id="L1482">        String sql = &quot;select count(*) from( select * from response where  response_survey_id = ? AND response_page_id = ? AND question_id = ? AND response_user_id = ?) as result&quot;;</span>
+
+<span class="nc" id="L1484">        return jdbcTemplate.queryForObject(sql, new Object[] { surveyId, pageId, questionId, userId }, Integer.class);</span>
+
+    }
+
+
+    public void moveToResponse(List&lt;Response&gt; responses) {
+<span class="nc" id="L1490">        String sql = &quot;INSERT INTO response(response_survey_id,response_page_id,question_id, answer, dateanswer,  optionanswer, questionType, response_user_id) values(?,?,?,?,?,to_jsonb(?::jsonb),?,?)&quot;</span>
+   ;
+
+<span class="nc" id="L1493">        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {</span>
+
+            public void setValues(PreparedStatement ps, int i) throws SQLException {
+<span class="nc" id="L1496">                ps.setInt(1, responses.get(i).getSurveyId());</span>
+<span class="nc" id="L1497">                ps.setInt(2, responses.get(i).getPageId());</span>
+<span class="nc" id="L1498">                ps.setInt(3, responses.get(i).getQuestionId());</span>
+<span class="nc" id="L1499">                ps.setString(4, responses.get(i).getAnswer());</span>
+<span class="nc" id="L1500">                ps.setTimestamp(5,responses.get(i).getDateAnswer());</span>
+<span class="nc" id="L1501">                Gson gson = new Gson();</span>
+<span class="nc" id="L1502">                String optionAnswer = gson.toJson(responses.get(i).getOptionAnswers());</span>
+<span class="nc" id="L1503">                ps.setString(6, optionAnswer);</span>
+<span class="nc" id="L1504">                ps.setString(7, responses.get(i).getQuestionType());</span>
+<span class="nc" id="L1505">                ps.setString(8, responses.get(i).getUserId());</span>
+<span class="nc" id="L1506">            }</span>
+
+            public int getBatchSize() {
+<span class="nc" id="L1509">                return responses.size();</span>
+            }
+
+        });
+
+<span class="nc" id="L1514">    }</span>
+
+    public List&lt;Response&gt; loadResponsesByIdSurveyandIdUser(int surveyId, String userId) throws Exception {
+<span class="nc" id="L1517">        String sql = &quot;SELECT * FROM response_temp&quot;</span>
+                + &quot; WHERE response_temp_survey_id = ? AND response_temp_user_id = ?&quot;;
+<span class="nc" id="L1519">        List&lt;Response&gt; responses = jdbcTemplate.query(sql, new Object[] { surveyId, userId }, new ResponseTempRowMapper());</span>
+<span class="nc bnc" id="L1520" title="All 2 branches missed.">        if (responses.isEmpty()) {</span>
+<span class="nc" id="L1521">            throw new Exception(&quot;not found&quot;);</span>
+        }
+<span class="nc" id="L1523">        return responses;</span>
+
+    }
+
+    public void deleteResponseTempByUserIdandSurveyId(int surveyId, String userId) {
+
+<span class="nc" id="L1529">        String sql = &quot;DELETE FROM response_temp where response_temp_survey_id = ? AND response_temp_user_id = ?&quot;;</span>
+
+<span class="nc" id="L1531">        Object[] params = { surveyId , userId};</span>
+
+<span class="nc" id="L1533">        jdbcTemplate.update(sql, params);</span>
+
+<span class="nc" id="L1535">    }</span>
+
+    public List&lt;Document&gt; getUserSurveySubmitted() throws SQLException {
+<span class="nc" id="L1538">        String sql = &quot;SELECT user_id, survey_id FROM user_survey WHERE submitresponse = ?&quot;;</span>
+<span class="nc" id="L1539">        List&lt;Document&gt; docs = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L1540">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L1542">            p.setBoolean(1, true);</span>
+<span class="nc" id="L1543">            try (ResultSet rs = p.executeQuery()) {</span>
+<span class="nc bnc" id="L1544" title="All 2 branches missed.">                while (rs.next()) {</span>
+
+<span class="nc" id="L1546">                    int surveyId = rs.getInt(&quot;survey_id&quot;);</span>
+<span class="nc" id="L1547">                    String userId = rs.getString(&quot;user_id&quot;);</span>
+
+<span class="nc" id="L1549">                    Document doc = new Document();</span>
+<span class="nc" id="L1550">                    doc.put(&quot;idSurvey&quot;, surveyId);</span>
+<span class="nc" id="L1551">                    doc.put(&quot;idUser&quot;, userId);</span>
+<span class="nc" id="L1552">                    docs.add(doc);</span>
+
+<span class="nc" id="L1554">                }</span>
+<span class="nc" id="L1555">            } catch (Exception e) {</span>
+<span class="nc" id="L1556">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L1557">            }</span>
+<span class="nc" id="L1558">        } catch (Exception e) {</span>
+<span class="nc" id="L1559">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L1560">        }</span>
+<span class="nc" id="L1561">        return docs;</span>
+    }
+
+    public int numberOfUserSubmitted(int idSurvey) throws SQLException {
+<span class="nc" id="L1565">        String sql = &quot;select count(*) from (SELECT user_id FROM user_survey WHERE submitresponse = true and survey_id = ?) as result&quot;;</span>
+<span class="nc" id="L1566">        return getJdbcTemplate().queryForObject(sql, new Object[]{idSurvey}, Integer.class);</span>
+    }
+
+    public List&lt;String&gt; getOrderedSubmittedUser(int idSurvey,  int pageNo) throws SQLException {
+<span class="nc" id="L1570">        String sql = &quot;select user_id from user_survey where survey_id = ? AND submitresponse = ? order by lastmodifiedAssign DESC limit 12 offset ?&quot;;</span>
+
+<span class="nc" id="L1572">        List&lt;String&gt; idUsers = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L1573">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L1575">            int offset = (pageNo - 1) * 12;</span>
+<span class="nc" id="L1576">            p.setInt(1, idSurvey);</span>
+<span class="nc" id="L1577">            p.setBoolean(2, true);</span>
+<span class="nc" id="L1578">            p.setInt(3, offset);</span>
+<span class="nc" id="L1579">            try (ResultSet rs = p.executeQuery()) {</span>
+<span class="nc bnc" id="L1580" title="All 2 branches missed.">                while (rs.next()) {</span>
+
+<span class="nc" id="L1582">                    String userId = rs.getString(&quot;user_id&quot;);</span>
+
+<span class="nc" id="L1584">                    idUsers.add(userId);</span>
+
+<span class="nc" id="L1586">                }</span>
+<span class="nc" id="L1587">            } catch (Exception e) {</span>
+<span class="nc" id="L1588">                throw new SQLException(&quot;cannot get the result set.&quot;);</span>
+<span class="nc" id="L1589">            }</span>
+<span class="nc" id="L1590">        } catch (Exception e) {</span>
+<span class="nc" id="L1591">            throw new SQLException(&quot;cannot connect to database.&quot;);</span>
+<span class="nc" id="L1592">        }</span>
+<span class="nc" id="L1593">        return idUsers;</span>
+    }
+
+    public String getIdUserByIndex(int idSurvey, int index) throws SQLException {
+<span class="nc" id="L1597">        String sql = &quot;select user_id  from user_survey where survey_id = ? AND submitresponse = ? order by lastmodifiedAssign DESC limit 12 offset ?&quot;;</span>
+<span class="nc" id="L1598">        try (Connection con = dataSource.getConnection(); PreparedStatement p = con.prepareStatement(sql);) {</span>
+
+<span class="nc" id="L1600">            p.setInt(1, idSurvey);</span>
+<span class="nc" id="L1601">            p.setBoolean(2, true);</span>
+<span class="nc" id="L1602">            p.setInt(3, index);</span>
+<span class="nc" id="L1603">            ResultSet rs = p.executeQuery();</span>
+<span class="nc" id="L1604">            rs.next();</span>
+<span class="nc" id="L1605">            return rs.getString(&quot;user_id&quot;);</span>
+        }
+
+
+
+    }
+
+    public int totalResponseBySurvey(int idSurvey) {
+<span class="nc" id="L1613">        String sql = &quot;select COUNT(*) from (select user_id from user_survey where survey_id = ? AND submitresponse = ? order by lastmodifiedAssign DESC) as ordered&quot;;</span>
+<span class="nc" id="L1614">        return getJdbcTemplate().queryForObject(sql, new Object[]{idSurvey, true}, Integer.class);</span>
+
+
+    }
+
+
+
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

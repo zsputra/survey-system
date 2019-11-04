@@ -1,0 +1,152 @@
+image: docker:stable
+services: 
+  - docker:dind
+
+variables:
+  DOCKER_DRIVER: overlay2
+  SPRING_PROFILES_ACTIVE: gitlab-ci
+  # This will supress any download for dependencies and plugins or upload messages which would clutter the console log.
+  # `showDateTime` will show the passed time in milliseconds. You need to specify `--batch-mode` to make this work.
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+  # As of Maven 3.3.0 instead of this you may define these options in `.mvn/maven.config` so the same config is used
+  # when running from the command line.
+  # `installAtEnd` and `deployAtEnd` are only effective with recent version of the corresponding plugins.
+  MAVEN_CLI_OPTS: "-s .m2/settings.xml --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
+
+stages:
+  - version
+  - build
+#  - test
+  - package
+#  - deploy
+
+tag-version:
+  image: 192.168.0.51:5000/rnd/semver/semver:latest
+  before_script:
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - eval $(ssh-agent -s)
+    - echo "$CI_DEPLOY_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+    - echo "$CI_DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+    - echo "$CI_DEPLOY_PRIVATE_KEY" > ~/.ssh/id_rsa
+    - chmod 700 ~/.ssh/id_rsa
+    - ls ~/.ssh
+  stage: version
+  script: 
+    # Get version, exit early if tag already exists
+    - export SEMVER_LAST_TAG=$(git describe --abbrev=0 --tags 2>/dev/null)
+    - export SEMVER_RELEASE_LEVEL=$(git log --oneline -1 --pretty=%B | cat | tr -d '\n' | cut -d "[" -f2 | cut -d "]" -f1)
+    - if [ -z $SEMVER_LAST_TAG ]; then >&2 echo "No tags defined"; SEMVER_LAST_TAG="0.0.0"; fi
+    - if [ -n $SEMVER_RELEASE_LEVEL ]; then >&2 echo "Release level ";echo $SEMVER_RELEASE_LEVEL;else >&2 echo "No release level defined, [patch] will be used."; export SEMVER_RELEASE_LEVEL=patch; fi
+    - export SEMVER_VERSION=$(/opt/semver-tool.sh bump $SEMVER_RELEASE_LEVEL $SEMVER_LAST_TAG)
+    - git tag
+    - echo $SEMVER_VERSION
+    - export SEMVER_VERSION_TAG_EXISTS=$(git tag | grep $SEMVER_VERSION | wc -l)
+    - test $SEMVER_VERSION_TAG_EXISTS -eq 1 && exit 0 # exit early if the version tag already exists
+    # Push new tag
+    - export SEMVER_REMOTE_EXIST=$(git remote | grep gitlab)
+    - if [ -z $SEMVER_REMOTE_EXIST]; then >&2 echo "No remote gitlab defined"; git remote add gitlab "$SEMVER_REPO_URL";else >&2 echo "Remote gitlab defined, removing it"; git remote remove gitlab; git remote add gitlab "$SEMVER_REPO_URL"; fi        
+    - git config --global user.name "$REG_USER"
+    - git config --global user.email "$REG_USER_EMAIL"
+    # Linknya harus diganti
+    - git remote set-url origin ssh://git@192.168.0.51:8022/rnd/survey-system/survey-service.git
+    - git remote -v
+    # - git fetch gitlab
+    - git tag $SEMVER_VERSION
+    - git push origin $SEMVER_VERSION
+  only:
+    - master
+  tags:
+    - master
+
+survey-service-build:
+  image: 192.168.0.51:5000/maven:3-jdk-8-alpine
+  stage: build
+  before_script:
+    # Copy and replace the variables in the ArtifactorySettings.xml to the correct one.
+    - mkdir -p ./.m2
+    - cp ArtifactorySettings.xml ./.m2/settings.xml
+    - sed -i 's,ARTIFACTORY_USER,'"$ARTIFACTORY_USER"',g' ./.m2/settings.xml
+    - sed -i 's,ARTIFACTORY_PASS,'"$ARTIFACTORY_PASS"',g' ./.m2/settings.xml
+    - sed -i 's,ARTIFACTORY_URL,'"$ARTIFACTORY_URL"',g' ./.m2/settings.xml
+  script: 
+  - "mvn package -Dmaven.test.skip=true"
+  cache:
+    key: mvncache
+    paths:
+        - ./.m2/repository
+        - ./target/
+  artifacts:
+    paths:
+      - ./target/*.jar
+  only:
+    - backend-survey-service-sprint-8
+  tags:
+    - master
+
+#survey-service-sonar:
+#  image: 192.168.0.51:5000/maven:3-jdk-8-alpine
+#  stage: test
+#  script:
+#  - "mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install -Dmaven.test.failure.ignore=true package sonar:sonar -Dsonar.host.url=http://192.168.25.11:8980"
+#  cache:
+#    key: mvncache
+#    paths:
+#        - ./.m2/repository
+#        - ./target/
+#  only:
+#    - sprint-3
+#  tags:
+#    - master
+
+survey-service-docker-package:
+  stage: package
+  script:
+    - "docker build --cache-from ${CI_REGISTRY}/${CI_PROJECT_PATH}/survey-service:${CI_COMMIT_REF_NAME} -t ${CI_REGISTRY}/${CI_PROJECT_PATH}/survey-service:${CI_COMMIT_REF_NAME} ."
+    - "docker push ${CI_REGISTRY}/${CI_PROJECT_PATH}/survey-service:${CI_COMMIT_REF_NAME}"
+    - "docker tag ${CI_REGISTRY}/${CI_PROJECT_PATH}/survey-service:${CI_COMMIT_REF_NAME} ${CI_REGISTRY}/${CI_PROJECT_PATH}/survey-service:latest"
+    - "docker push ${CI_REGISTRY}/${CI_PROJECT_PATH}/survey-service:latest"
+  only:
+    - backend-survey-service-sprint-8
+  tags:
+    - master
+
+#auth-service-deploy:
+#  image: 192.168.0.51:5000/rnd/semver/semver:latest
+#  stage: deploy
+#  before_script:
+#    - mkdir -p ~/.ssh
+#    - chmod 700 ~/.ssh
+#    - eval $(ssh-agent -s)
+#    - echo "$CI_DEPLOY_PRIVATE_KEY" | tr -d '\r' | ssh-add - > /dev/null
+#    - echo "$CI_DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+#    - chmod 644 ~/.ssh/known_hosts
+#    - echo "$CI_DEPLOY_PRIVATE_KEY" > ~/.ssh/id_rsa
+#    - chmod 700 ~/.ssh/id_rsa
+#    - ls ~/.ssh
+#    - git clone ssh://git@192.168.0.51:8022/rnd/survey-system/survey-deploy.git
+#    - pwd
+#  script:
+#    #- pwd
+#    #- cd ~/survey
+#    - pwd
+#    - ls
+#    - echo "Commit Ref Name = ${CI_COMMIT_REF_NAME}"
+#    - echo "Pelaku = ${GITLAB_USER_NAME}"
+#    - echo "Project = ${CI_PROJECT_NAME}"
+#    - echo "Tags = ${CI_COMMIT_TAG}"
+#    - git fetch
+#    - git remote -v
+#    - git config --global user.name "${GITLAB_USER_ID}"
+#    - git config --global user.email "${GITLAB_USER_EMAIL}"
+#    # replace service-name with image name. ex: data-regla-service
+##    - ./update-version.sh auth-service ${CI_COMMIT_TAG}
+#    - git add .
+#    - git commit -m "${GITLAB_USER_NAME} update ${CI_PROJECT_NAME} version to ${CI_COMMIT_TAG}"
+#    - git pull origin master
+#    - git push origin master
+#  only:
+#    - backend-deploy
+#  tags:
+#    - master

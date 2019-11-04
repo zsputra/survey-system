@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Question.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">survey-system-survey-service</a> &gt; <a href="index.source.html" class="el_package">com.emerio.surveysystem.model</a> &gt; <span class="el_source">Question.java</span></div><h1>Question.java</h1><pre class="source lang-java linenums">package com.emerio.surveysystem.model;
+
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.bson.Document;
+import org.springframework.stereotype.Component;
+
+
+@Component
+<span class="fc" id="L14">public class Question {</span>
+
+    private int id;
+    private String question;
+    private String questionType;
+    private boolean requiredValue;
+
+<span class="fc" id="L21">    private List&lt;Values&gt; values = new ArrayList&lt;&gt;();</span>
+
+<span class="fc" id="L23">    private List&lt;Description&gt; descriptions = new ArrayList&lt;&gt;();</span>
+
+    private String description;
+    private String titlepic;
+    private String imgPage;
+    private String imgQuestion;
+    private String answer;
+    //private LocalDateTime dateAnswer;
+    private Timestamp dateAnswer;
+    private boolean validateStatus;
+    private String validateType;
+    private String validateSetting;
+    private int validateValue;
+    private Validate validate;
+
+    public String getValidateType() {
+<span class="fc" id="L39">        return validateType;</span>
+    }
+
+    public void setValidateType(String validateType) {
+<span class="nc" id="L43">        this.validateType = validateType;</span>
+<span class="nc" id="L44">    }</span>
+
+    public String getValidateSetting() {
+<span class="fc" id="L47">        return validateSetting;</span>
+    }
+
+    public void setValidateSetting(String validateSetting) {
+<span class="nc" id="L51">        this.validateSetting = validateSetting;</span>
+<span class="nc" id="L52">    }</span>
+
+    public int getValidateValue() {
+<span class="fc" id="L55">        return validateValue;</span>
+    }
+
+    public void setValidateValue(int validateValue) {
+<span class="nc" id="L59">        this.validateValue = validateValue;</span>
+<span class="nc" id="L60">    }</span>
+
+    public int getId() {
+<span class="fc" id="L63">        return id;</span>
+    }
+
+    public void setId(int question_id) {
+<span class="fc" id="L67">        this.id = question_id;</span>
+<span class="fc" id="L68">    }</span>
+
+    public String getQuestion() {
+<span class="fc" id="L71">        return question;</span>
+    }
+
+    public void setQuestion(String question) {
+<span class="fc" id="L75">        this.question = question;</span>
+<span class="fc" id="L76">    }</span>
+
+    public String getQuestionType() {
+<span class="fc" id="L79">        return questionType;</span>
+    }
+
+    public void setQuestionType(String questionType) {
+<span class="fc" id="L83">        this.questionType = questionType;</span>
+<span class="fc" id="L84">    }</span>
+
+    public boolean isRequiredValue() {
+<span class="nc" id="L87">        return this.requiredValue;</span>
+    }
+
+    public boolean getRequiredValue() {
+<span class="fc" id="L91">        return this.requiredValue;</span>
+    }
+
+    public void setRequiredValue(boolean requiredValue) {
+<span class="fc" id="L95">        this.requiredValue = requiredValue;</span>
+<span class="fc" id="L96">    }</span>
+
+
+    public List&lt;Values&gt; getValues() {
+<span class="fc" id="L100">        return values;</span>
+    }
+
+    public List&lt;Description&gt; getDescriptions() {
+<span class="fc" id="L104">        return descriptions;</span>
+    }
+
+    public void setValues(List&lt;Values&gt; values) {
+<span class="fc" id="L108">        this.values = values;</span>
+<span class="fc" id="L109">    }</span>
+
+    public void addValues(Values values) {
+<span class="fc" id="L112">        this.values.add(values);</span>
+<span class="fc" id="L113">    }</span>
+
+    public void setDescriptions(List&lt;Description&gt; descriptions) {
+<span class="fc" id="L116">        this.descriptions = descriptions;</span>
+<span class="fc" id="L117">    }</span>
+
+    public void addDescriptions(Description descriptions) {
+<span class="fc" id="L120">        this.descriptions.add(descriptions);</span>
+<span class="fc" id="L121">    }</span>
+
+    public String getAnswer() {
+<span class="fc" id="L124">        return this.answer;</span>
+    }
+
+    public void setAnswer(String answer) {
+<span class="nc" id="L128">        this.answer = answer;</span>
+<span class="nc" id="L129">    }</span>
+
+    public String getDescription() {
+<span class="fc" id="L132">        return this.description;</span>
+    }
+
+    public void setDescription(String description) {
+<span class="fc" id="L136">        this.description = description;</span>
+<span class="fc" id="L137">    }</span>
+
+    public String getTitlepic() {
+<span class="fc" id="L140">        return this.titlepic;</span>
+    }
+
+    public void setTitlepic(String titlepic) {
+<span class="nc" id="L144">        this.titlepic = titlepic;</span>
+<span class="nc" id="L145">    }</span>
+
+    public String getImgPage() {
+<span class="fc" id="L148">        return this.imgPage;</span>
+    }
+
+    public void setImgPage(String imgPage) {
+<span class="nc" id="L152">        this.imgPage = imgPage;</span>
+<span class="nc" id="L153">    }</span>
+
+    public String getImgQuestion() {
+<span class="fc" id="L156">        return this.imgQuestion;</span>
+    }
+
+    public void setImgQuestion(String imgQuestion) {
+<span class="nc" id="L160">        this.imgQuestion = imgQuestion;</span>
+<span class="nc" id="L161">    }</span>
+
+    public boolean isValidateStatus() {
+<span class="fc" id="L164">        return validateStatus;</span>
+    }
+
+    public void setValidateStatus(boolean validateStatus) {
+<span class="nc" id="L168">        this.validateStatus = validateStatus;</span>
+<span class="nc" id="L169">    }</span>
+
+
+//    public LocalDateTime getDateAnswer() {
+//        return dateAnswer;
+//    }
+//
+//    public void setDateAnswer(LocalDateTime dateAnswer) {
+//        this.dateAnswer = dateAnswer;
+//    }
+
+
+    public Timestamp getDateAnswer() {
+<span class="fc" id="L182">        return dateAnswer;</span>
+    }
+
+    public void setDateAnswer(Timestamp dateAnswer) {
+<span class="nc" id="L186">        this.dateAnswer = dateAnswer;</span>
+<span class="nc" id="L187">    }</span>
+
+    public Validate getValidate() {
+<span class="fc" id="L190">        return validate;</span>
+    }
+
+    public void setValidate(Validate validate) {
+<span class="nc" id="L194">        this.validate = validate;</span>
+<span class="nc" id="L195">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

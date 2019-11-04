@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.emerio.surveysystem.DemoApplicationTests
+-------------------------------------------------------------------------------
+Tests run: 21, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 7.799 s - in com.emerio.surveysystem.DemoApplicationTests

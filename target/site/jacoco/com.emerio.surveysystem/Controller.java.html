@@ -1,0 +1,803 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Controller.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">survey-system-survey-service</a> &gt; <a href="index.source.html" class="el_package">com.emerio.surveysystem</a> &gt; <span class="el_source">Controller.java</span></div><h1>Controller.java</h1><pre class="source lang-java linenums">package com.emerio.surveysystem;
+
+import com.emerio.surveysystem.model.*;
+import com.emerio.surveysystem.service.FileService;
+import com.emerio.surveysystem.service.SurveyService;
+import com.google.gson.Gson;
+import org.bson.Document;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+
+// @RequestMapping(&quot;api/survey&quot;)
+@RestController()
+
+<span class="fc" id="L27">public class Controller {</span>
+
+    @Value(&quot;${app.kong.host}&quot;)
+    private String kongHost;
+
+    @Value(&quot;${app.kong.port}&quot;)
+    private int kongPort;
+
+    @Autowired
+    FileService minioService;
+
+    @Autowired
+    UserDao userDao;
+
+    @Autowired
+    SurveyService surveyService;
+
+    @Autowired
+    SurveyDao surveyDao;
+
+    @GetMapping(&quot;/generate-id-survey&quot;)
+    public ResponseEntity&lt;Integer&gt; generateIdSurvey() throws SQLException {
+<span class="fc" id="L49">        return new ResponseEntity&lt;Integer&gt;(surveyService.getnerateId(), HttpStatus.OK);</span>
+    }
+
+    @PostMapping(&quot;/add-survey&quot;)
+    public ResponseEntity addSurvey(@RequestBody Survey survey) {
+
+<span class="fc" id="L55">        boolean exists = surveyService.checkIdSurvey(survey.getIdSurvey());</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (exists == true) {</span>
+<span class="fc" id="L57">            surveyService.updateSurvey(survey);</span>
+<span class="fc" id="L58">            return new ResponseEntity&lt;&gt;(HttpStatus.CREATED);</span>
+        } else {
+<span class="fc" id="L60">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @GetMapping(&quot;/load-all-survey&quot;)
+    public ResponseEntity&lt;List&lt;Survey&gt;&gt; getAllSurvey() {
+        try {
+<span class="fc" id="L67">            return new ResponseEntity&lt;List&lt;Survey&gt;&gt;(surveyService.loadAlSurveys(), HttpStatus.OK);</span>
+<span class="nc" id="L68">        } catch (Exception e) {</span>
+<span class="nc" id="L69">            return new ResponseEntity&lt;&gt;(HttpStatus.NOT_FOUND);</span>
+        }
+    }
+
+    @RequestMapping(method = RequestMethod.GET, value = &quot;/load-survey-by-id/{survey_id}&quot;, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity&lt;Survey&gt; getSurveyById(@PathVariable(name = &quot;survey_id&quot;) int idSurvey) {
+
+<span class="fc" id="L76">        boolean exists = surveyService.checkIdSurvey(idSurvey);</span>
+<span class="pc bpc" id="L77" title="1 of 2 branches missed.">        if (exists == true) {</span>
+<span class="nc" id="L78">            return new ResponseEntity&lt;Survey&gt;(surveyService.loadSurveyById(idSurvey), HttpStatus.OK);</span>
+        } else {
+<span class="fc" id="L80">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @GetMapping(&quot;/load-survey-by-id-page-one/{survey_id}&quot;)
+    public ResponseEntity&lt;Survey&gt; getSurveyPageOneById(@PathVariable(name = &quot;survey_id&quot;) int idSurvey) {
+
+<span class="nc" id="L87">        boolean exists = surveyService.checkIdSurvey(idSurvey);</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">        if (exists == true) {</span>
+<span class="nc" id="L89">            return new ResponseEntity&lt;Survey&gt;(surveyService.loadSurveyByIdPageOne(idSurvey), HttpStatus.OK);</span>
+        } else {
+<span class="nc" id="L91">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @GetMapping(&quot;/load-survey-by-survey-id-and-page-id/{user_id}/{survey_id}/{page_id}&quot;)
+    public ResponseEntity&lt;Document&gt; getSurveyByUserIdSurveyIdandPageId(@PathVariable(name = &quot;user_id&quot;) String idUser,
+            @PathVariable(name = &quot;survey_id&quot;) int idSurvey, @PathVariable(name = &quot;page_id&quot;) int page_id) {
+
+<span class="nc" id="L99">        Survey newSurvey = surveyService.loadSurveyBySurveyIdandPageId(idSurvey, idUser, page_id);</span>
+<span class="nc" id="L100">        Page newPage = surveyService.loadPageBySurveyIdandPageId(idSurvey, idUser, page_id);</span>
+<span class="nc" id="L101">        int totalpage = surveyService.totalCountPage(idSurvey) - 1;</span>
+
+<span class="nc" id="L103">        String user_id = surveyService.loadUserId(idSurvey, idUser);</span>
+<span class="nc" id="L104">        Boolean submitStatus = surveyService.loadSubmitStatus(idSurvey, idUser);</span>
+
+<span class="nc bnc" id="L106" title="All 2 branches missed.">        for (Question question : newPage.getQuestions()) {</span>
+
+<span class="nc" id="L108">            boolean answerExist = surveyService.checkAnswerBySurveyIdPageIdQuestionId(idSurvey, page_id,</span>
+<span class="nc" id="L109">                    question.getId(), idUser);</span>
+
+<span class="nc bnc" id="L111" title="All 2 branches missed.">            if (answerExist == false) {</span>
+<span class="nc" id="L112">                question.setAnswer(null);</span>
+<span class="nc" id="L113">                question.setDateAnswer(null);</span>
+                // question.setValues(null);
+            } else {
+
+<span class="nc bnc" id="L117" title="All 2 branches missed.">                if (question.getQuestionType().equalsIgnoreCase(&quot;CHECKBOX&quot;)) {</span>
+<span class="nc" id="L118">                    List&lt;Values&gt; values = surveyService.loadOptionAnswerbySurveyIdPageIdandQuestionId(idSurvey, page_id,</span>
+<span class="nc" id="L119">                            question.getId(), idUser);</span>
+<span class="nc" id="L120">                    question.setValues(values);</span>
+<span class="nc" id="L121">                    question.setAnswer(null);</span>
+<span class="nc" id="L122">                    question.setDateAnswer(null);</span>
+<span class="nc" id="L123">                } else {</span>
+                    // question.setValues(null);
+<span class="nc" id="L125">                    String answer = surveyService.loadAnswerbySurveyIdPageIdandQuestionId(idSurvey, page_id,</span>
+<span class="nc" id="L126">                            question.getId(), idUser);</span>
+
+<span class="nc" id="L128">                    Timestamp dateAnswer = surveyDao.loadDateAnswerbySurveyIdPageIdandQuestionId(idSurvey, page_id,</span>
+<span class="nc" id="L129">                            question.getId(), idUser);</span>
+
+<span class="nc" id="L131">                    question.setAnswer(answer);</span>
+<span class="nc" id="L132">                    question.setDateAnswer(dateAnswer);</span>
+                }
+            }
+//            question.setValidateType(&quot;LENGTH&quot;);
+//            question.setValidateSetting(&quot;MIN&quot;);
+//            question.setValidateValue(5);
+
+<span class="nc" id="L139">        }</span>
+
+<span class="nc" id="L141">        Document doc = new Document();</span>
+
+<span class="nc" id="L143">        doc.put(&quot;idSurvey&quot;, newSurvey.getIdSurvey());</span>
+<span class="nc" id="L144">        doc.put(&quot;idUser&quot;, user_id);</span>
+<span class="nc" id="L145">        doc.put(&quot;submitStatus&quot;, submitStatus);</span>
+<span class="nc" id="L146">        doc.put(&quot;colorHeader&quot;, newSurvey.getColorHeader());</span>
+<span class="nc" id="L147">        doc.put(&quot;colorBg&quot;, newSurvey.getColorBg());</span>
+<span class="nc" id="L148">        doc.put(&quot;icon&quot;, newSurvey.getIcon());</span>
+<span class="nc" id="L149">        doc.put(&quot;imgHeader&quot;, newSurvey.getImgHeader());</span>
+<span class="nc" id="L150">        doc.put(&quot;imgIcon&quot;, newSurvey.getImgIcon());</span>
+<span class="nc" id="L151">        doc.put(&quot;totalpages&quot;, totalpage);</span>
+<span class="nc" id="L152">        doc.put(&quot;id&quot;, newPage.getId());</span>
+<span class="nc" id="L153">        doc.put(&quot;title&quot;, newPage.getTitle());</span>
+<span class="nc" id="L154">        doc.put(&quot;desc&quot;, newPage.getDesc());</span>
+<span class="nc" id="L155">        doc.put(&quot;questions&quot;, newPage.getQuestions());</span>
+
+<span class="nc" id="L157">        return new ResponseEntity&lt;Document&gt;(doc, HttpStatus.OK);</span>
+
+        // catch (Exception e){
+        // return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);
+        // }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination/{idUser}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPagination(@PathVariable(name = &quot;idUser&quot;) String idUser,
+            @PathVariable(name = &quot;pageNo&quot;) int pageNo) throws SQLException {
+        try {
+<span class="nc" id="L168">            int totalRecords = surveyService.totalCount(idUser);</span>
+<span class="nc" id="L169">            List&lt;SurveyView&gt; surveyViews = surveyService.surveyPagination(idUser, 8, pageNo);</span>
+<span class="nc" id="L170">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPagination(totalRecords, surveyViews, pageNo);</span>
+<span class="nc" id="L171">                return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+<span class="nc" id="L172">        } catch (Exception e) {</span>
+<span class="nc" id="L173">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-save-status/{idUser}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationSaveStatus(@PathVariable(name = &quot;idUser&quot;) String idUser,
+            @PathVariable(name = &quot;pageNo&quot;) int pageNo) throws SQLException {
+
+        try {
+<span class="nc" id="L182">            int totalRecords = surveyService.totalCountSaveStatus(idUser);</span>
+<span class="nc" id="L183">            List&lt;SurveyView&gt; surveyViews = surveyService.surveyPaginationSaveStatus(idUser, 8, pageNo);;</span>
+<span class="nc" id="L184">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPagination(totalRecords, surveyViews, pageNo);</span>
+
+<span class="nc" id="L186">            return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+<span class="nc" id="L187">        } catch (Exception e) {</span>
+<span class="nc" id="L188">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-save-status-sortby-asc/{idUser}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationSaveStatusSortByASC(
+            @PathVariable(name = &quot;idUser&quot;) String idUser, @PathVariable(name = &quot;pageNo&quot;) int pageNo)
+            throws SQLException {
+
+        try {
+<span class="nc" id="L198">            int totalRecords = surveyService.totalCountSaveStatus(idUser);</span>
+<span class="nc" id="L199">            List&lt;SurveyView&gt; surveyViews = surveyService.surveyPaginationSaveStatusSortByASC(idUser, 8, pageNo);;</span>
+<span class="nc" id="L200">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPagination(totalRecords, surveyViews, pageNo);</span>
+
+<span class="nc" id="L202">            return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+
+<span class="nc" id="L204">        } catch (Exception e) {</span>
+<span class="nc" id="L205">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-save-status-sortby-desc/{idUser}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationSaveStatusSortByDESC(
+            @PathVariable(name = &quot;idUser&quot;) String idUser, @PathVariable(name = &quot;pageNo&quot;) int pageNo)
+            throws SQLException {
+
+        try {
+
+<span class="nc" id="L216">            int totalRecords = surveyService.totalCountSaveStatus(idUser);</span>
+<span class="nc" id="L217">            List&lt;SurveyView&gt; surveyViews = surveyService.surveyPaginationSaveStatusSortByDESC(idUser, 8, pageNo);;</span>
+<span class="nc" id="L218">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPagination(totalRecords, surveyViews, pageNo);</span>
+
+<span class="nc" id="L220">            return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+
+<span class="nc" id="L222">        } catch (Exception e) {</span>
+<span class="nc" id="L223">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-save-status-sortby-date-asc/{idUser}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationSaveStatusSortByDateASC(
+            @PathVariable(name = &quot;idUser&quot;) String idUser, @PathVariable(name = &quot;pageNo&quot;) int pageNo)
+            throws SQLException {
+
+        try {
+
+<span class="nc" id="L234">            int totalRecords = surveyService.totalCountSaveStatus(idUser);</span>
+
+<span class="nc" id="L236">            List&lt;SurveyView&gt; surveyViews = surveyService.surveyPaginationSaveStatusSortByDateASC(idUser, 8,</span>
+                        pageNo);
+<span class="nc" id="L238">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPagination(totalRecords, surveyViews, pageNo);</span>
+
+<span class="nc" id="L240">                return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+<span class="nc" id="L241">        } catch (Exception e) {</span>
+<span class="nc" id="L242">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-save-status-sortby-date-desc/{idUser}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationSaveStatusSortByDateDESC(
+            @PathVariable(name = &quot;idUser&quot;) String idUser, @PathVariable(name = &quot;pageNo&quot;) int pageNo)
+            throws SQLException {
+
+        try {
+
+<span class="nc" id="L253">            int totalRecords = surveyService.totalCountSaveStatus(idUser);</span>
+<span class="nc" id="L254">            List&lt;SurveyView&gt; surveyViews = surveyService.surveyPaginationSaveStatusSortByDateDESC(idUser, 8,</span>
+                        pageNo);
+<span class="nc" id="L256">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPagination(totalRecords, surveyViews, pageNo);</span>
+
+<span class="nc" id="L258">                return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+<span class="nc" id="L259">        } catch (Exception e) {</span>
+<span class="nc" id="L260">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-publish-status/{idUser}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationSubmitStatus(
+            @PathVariable(name = &quot;idUser&quot;) String idUser, @PathVariable(name = &quot;pageNo&quot;) int pageNo)
+            throws SQLException {
+
+        try {
+
+<span class="nc" id="L271">            int totalRecords = surveyService.totalCountPublishStatus(idUser);</span>
+<span class="nc" id="L272">            List&lt;SurveyView&gt; surveyViews = surveyService.surveyPaginationPublishStatus(idUser, 8, pageNo);;</span>
+<span class="nc" id="L273">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPagination(totalRecords, surveyViews, pageNo);</span>
+
+<span class="nc" id="L275">                return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+
+<span class="nc" id="L277">        } catch (Exception e) {</span>
+<span class="nc" id="L278">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-publish-status-sortby-asc/{idUser}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationPublishsortByASC(
+            @PathVariable(name = &quot;idUser&quot;) String idUser, @PathVariable(name = &quot;pageNo&quot;) int pageNo)
+            throws SQLException {
+
+        try {
+
+<span class="nc" id="L289">            int totalRecords = surveyService.totalCountPublishStatus(idUser);</span>
+<span class="nc" id="L290">            List&lt;SurveyView&gt; surveyViews = surveyService.surveyPaginationPublishStatusSortByASC(idUser, 8, pageNo);;</span>
+<span class="nc" id="L291">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPagination(totalRecords, surveyViews, pageNo);</span>
+
+<span class="nc" id="L293">                return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+
+<span class="nc" id="L295">        } catch (Exception e) {</span>
+<span class="nc" id="L296">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-publish-status-sortby-desc/{idUser}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationSubmitStatusSortByDESC(
+            @PathVariable(name = &quot;idUser&quot;) String idUser, @PathVariable(name = &quot;pageNo&quot;) int pageNo)
+            throws SQLException {
+
+        try {
+
+<span class="nc" id="L307">            int totalRecords = surveyService.totalCountPublishStatus(idUser);</span>
+<span class="nc" id="L308">            List&lt;SurveyView&gt; surveyViews = surveyService.surveyPaginationPublishStatusSortByDESC(idUser, 8,</span>
+                        pageNo);
+<span class="nc" id="L310">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPagination(totalRecords, surveyViews, pageNo);</span>
+
+<span class="nc" id="L312">                return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+
+<span class="nc" id="L314">        } catch (Exception e) {</span>
+<span class="nc" id="L315">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-publish-status-sortby-date-asc/{idUser}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationSubmitStatusSortByDateASC(
+            @PathVariable(name = &quot;idUser&quot;) String idUser, @PathVariable(name = &quot;pageNo&quot;) int pageNo)
+            throws SQLException {
+
+        try {
+
+<span class="nc" id="L326">            int totalRecords = surveyService.totalCountPublishStatus(idUser);</span>
+<span class="nc" id="L327">            List&lt;SurveyView&gt; surveyViews = surveyService.surveyPaginationPublishStatusSortByDateASC(idUser, 8,</span>
+                        pageNo);
+<span class="nc" id="L329">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPagination(totalRecords, surveyViews, pageNo);</span>
+
+<span class="nc" id="L331">                return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+
+<span class="nc" id="L333">        } catch (Exception e) {</span>
+<span class="nc" id="L334">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-publish-statussortby-date-desc/{idUser}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationSubmitStatusSortByDateDESC(
+            @PathVariable(name = &quot;idUser&quot;) String idUser, @PathVariable(name = &quot;pageNo&quot;) int pageNo)
+            throws SQLException {
+
+        try {
+
+<span class="nc" id="L345">            int totalRecords = surveyService.totalCountPublishStatus(idUser);</span>
+<span class="nc" id="L346">            List&lt;SurveyView&gt; surveyViews = surveyService.surveyPaginationPublishStatusSortByDateDESC(idUser, 8,</span>
+                        pageNo);
+<span class="nc" id="L348">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPagination(totalRecords, surveyViews, pageNo);</span>
+
+<span class="nc" id="L350">                return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+<span class="nc" id="L351">        } catch (Exception e) {</span>
+<span class="nc" id="L352">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-sort-bydesc/{idUser}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationSortBydesc(@PathVariable(name = &quot;idUser&quot;) String idUser,
+            @PathVariable(name = &quot;pageNo&quot;) int pageNo) throws SQLException {
+
+        try {
+
+<span class="nc" id="L362">            int totalRecords = surveyService.totalCount(idUser);</span>
+<span class="nc" id="L363">            List&lt;SurveyView&gt; surveyViews = surveyService.surveyPaginationSortByDesc(idUser, 8, pageNo);;</span>
+<span class="nc" id="L364">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPagination(totalRecords, surveyViews, pageNo);</span>
+
+<span class="nc" id="L366">                return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+
+<span class="nc" id="L368">        } catch (Exception e) {</span>
+<span class="nc" id="L369">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-sort-byasc/{idUser}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationSortByasc(@PathVariable(name = &quot;idUser&quot;) String idUser,
+            @PathVariable(name = &quot;pageNo&quot;) int pageNo) throws SQLException {
+
+        try {
+
+<span class="nc" id="L379">            int totalRecords = surveyService.totalCount(idUser);</span>
+<span class="nc" id="L380">            List&lt;SurveyView&gt; surveyViews = surveyService.surveyPaginationSortByAsc(idUser, 8, pageNo);;</span>
+<span class="nc" id="L381">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPagination(totalRecords, surveyViews, pageNo);</span>
+
+<span class="nc" id="L383">                return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+<span class="nc" id="L384">        } catch (Exception e) {</span>
+<span class="nc" id="L385">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-sort-by-last-modified-desc/{idUser}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationSortByLastModifiedDesc(
+            @PathVariable(name = &quot;idUser&quot;) String idUser, @PathVariable(name = &quot;pageNo&quot;) int pageNo)
+            throws SQLException {
+
+        try {
+
+<span class="nc" id="L396">            int totalRecords = surveyService.totalCount(idUser);</span>
+<span class="nc" id="L397">            List&lt;SurveyView&gt; surveyViews = surveyService.surveyPaginationSortByLastModifiedDesc(idUser, 8, pageNo);</span>
+<span class="nc" id="L398">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPagination(totalRecords, surveyViews, pageNo);</span>
+<span class="nc" id="L399">                return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+
+<span class="nc" id="L401">        } catch (Exception e) {</span>
+<span class="nc" id="L402">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-sort-by-last-modified-asc/{idUser}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationSortByLastModifiedAsc(
+            @PathVariable(name = &quot;idUser&quot;) String idUser, @PathVariable(name = &quot;pageNo&quot;) int pageNo)
+            throws SQLException {
+
+        try {
+
+<span class="nc" id="L413">            int totalRecords = surveyService.totalCount(idUser);</span>
+<span class="nc" id="L414">            List&lt;SurveyView&gt; surveyViews = surveyService.surveyPaginationSortByLastModifiedAsc(idUser, 8, pageNo);;</span>
+<span class="nc" id="L415">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPagination(totalRecords, surveyViews, pageNo);</span>
+<span class="nc" id="L416">                return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+
+<span class="nc" id="L418">        } catch (Exception e) {</span>
+<span class="nc" id="L419">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-assign/{user_id}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationAssign(@PathVariable(name = &quot;user_id&quot;) String userId,
+            @PathVariable(name = &quot;pageNo&quot;) int pageNo) throws SQLException {
+
+        try {
+
+<span class="nc" id="L429">            int totalRecords = surveyService.totalCountAssign(userId);</span>
+<span class="nc" id="L430">            List&lt;SurveyViewAssign&gt; surveyViews = surveyService.surveyPaginationAssign(userId, 8, pageNo);</span>
+<span class="nc" id="L431">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPaginationAssign(totalRecords, surveyViews, pageNo);</span>
+
+<span class="nc" id="L433">                return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+
+<span class="nc" id="L435">        } catch (Exception e) {</span>
+<span class="nc" id="L436">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-assign-private-status/{user_id}/{privatestatus}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationAssignActiveStatus(
+            @PathVariable(name = &quot;user_id&quot;) String userId, @PathVariable(name = &quot;pageNo&quot;) int pageNo)
+            throws SQLException {
+
+        try {
+
+<span class="nc" id="L447">            int totalRecords = surveyService.totalCountAssign(userId);</span>
+<span class="nc" id="L448">            List&lt;SurveyViewAssign&gt; surveyViews = surveyService.surveyPaginationAssignPrivateStatus(userId, 8,</span>
+                        pageNo);
+<span class="nc" id="L450">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPaginationAssign(totalRecords, surveyViews, pageNo);</span>
+
+<span class="nc" id="L452">                return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+
+<span class="nc" id="L454">        } catch (Exception e) {</span>
+<span class="nc" id="L455">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-assign-public-status/{user_id}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationAssignInactiveStatus(
+            @PathVariable(name = &quot;user_id&quot;) String userId, @PathVariable(name = &quot;pageNo&quot;) int pageNo)
+            throws SQLException {
+
+        try {
+<span class="nc" id="L465">            int totalRecords = surveyService.totalCountAssignPublicStatus(userId);</span>
+<span class="nc" id="L466">            List&lt;SurveyViewAssign&gt; surveyViews = surveyService.surveyPaginationAssignPublicStatus(userId, 8,</span>
+                        pageNo);
+<span class="nc" id="L468">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPaginationAssign(totalRecords, surveyViews, pageNo);</span>
+
+<span class="nc" id="L470">                return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+<span class="nc" id="L471">        } catch (Exception e) {</span>
+<span class="nc" id="L472">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-assign-answered-status/{user_id}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationAssignAnswered(
+            @PathVariable(name = &quot;user_id&quot;) String userId, @PathVariable(name = &quot;pageNo&quot;) int pageNo)
+            throws SQLException {
+
+        try {
+<span class="nc" id="L482">            int totalRecords = surveyService.totalCountAssignAnsweredStatus(userId);</span>
+<span class="nc" id="L483">            List&lt;SurveyViewAssign&gt; surveyViews = surveyService.surveyPaginationAssignAnswered(userId, 8, pageNo);</span>
+<span class="nc" id="L484">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPaginationAssign(totalRecords, surveyViews, pageNo);</span>
+<span class="nc" id="L485">                return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+
+<span class="nc" id="L487">        } catch (Exception e) {</span>
+<span class="nc" id="L488">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-assign-dismiss-status/{user_id}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationAssignDismiss(
+            @PathVariable(name = &quot;user_id&quot;) String userId, @PathVariable(name = &quot;pageNo&quot;) int pageNo)
+            throws SQLException {
+
+        try {
+<span class="nc" id="L498">            int totalRecords = surveyService.totaCountAssignDismissStatus(userId);</span>
+<span class="nc" id="L499">            List&lt;SurveyViewAssign&gt; surveyViews = surveyService.surveyPaginationAssignDismiss(userId, 8, pageNo);</span>
+<span class="nc" id="L500">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPaginationAssign(totalRecords, surveyViews, pageNo);</span>
+
+<span class="nc" id="L502">                return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+
+<span class="nc" id="L504">        } catch (Exception e) {</span>
+<span class="nc" id="L505">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-assign-sortAsc/{user_id}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationAssignSortASc(
+            @PathVariable(name = &quot;user_id&quot;) String userId, @PathVariable(name = &quot;pageNo&quot;) int pageNo)
+            throws SQLException {
+
+        try {
+
+<span class="nc" id="L516">            int totalRecords = surveyService.totalCountAssign(userId);</span>
+<span class="nc" id="L517">            List&lt;SurveyViewAssign&gt; surveyViews = surveyService.surveyPAginationAssignSortASC(userId, 8, pageNo);</span>
+<span class="nc" id="L518">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPaginationAssign(totalRecords, surveyViews, pageNo);</span>
+
+<span class="nc" id="L520">                return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+<span class="nc" id="L521">        } catch (Exception e) {</span>
+<span class="nc" id="L522">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-assign-sortDesc/{user_id}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationAssignsortDesc(
+            @PathVariable(name = &quot;user_id&quot;) String userId, @PathVariable(name = &quot;pageNo&quot;) int pageNo)
+            throws SQLException {
+
+        try {
+
+<span class="nc" id="L533">            int totalRecords = surveyService.totalCountAssign(userId);</span>
+<span class="nc" id="L534">            List&lt;SurveyViewAssign&gt; surveyViews = surveyService.surveyPaginationAssignSortDESC(userId, 8, pageNo);</span>
+<span class="nc" id="L535">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPaginationAssign(totalRecords, surveyViews, pageNo);</span>
+
+<span class="nc" id="L537">                return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+<span class="nc" id="L538">        } catch (Exception e) {</span>
+<span class="nc" id="L539">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-assign-lastmodifiedASC/{user_id}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationAssignLastModifiedASC(
+            @PathVariable(name = &quot;user_id&quot;) String userId, @PathVariable(name = &quot;pageNo&quot;) int pageNo)
+            throws SQLException {
+
+        try {
+
+<span class="nc" id="L550">            int totalRecords = surveyService.totalCountAssign(userId);</span>
+<span class="nc" id="L551">            List&lt;SurveyViewAssign&gt; surveyViews = surveyService.surveyPaginationAssignSortTimeASC(userId, 8,</span>
+                        pageNo);
+<span class="nc" id="L553">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPaginationAssign(totalRecords, surveyViews, pageNo);</span>
+
+<span class="nc" id="L555">                return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+
+<span class="nc" id="L557">        } catch (Exception e) {</span>
+<span class="nc" id="L558">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @RequestMapping(value = &quot;/find-all-survey-pagination-assign-lastmodifiedDESC/{user_id}/{pageNo}&quot;, method = RequestMethod.GET)
+    public ResponseEntity&lt;Map&lt;String, Object&gt;&gt; surveyPaginationAssignLastModifiedDESC(
+            @PathVariable(name = &quot;user_id&quot;) String userId, @PathVariable(name = &quot;pageNo&quot;) int pageNo)
+            throws SQLException {
+
+        try {
+
+<span class="nc" id="L569">            int totalRecords = surveyService.totalCountAssign(userId);</span>
+<span class="nc" id="L570">            List&lt;SurveyViewAssign&gt; surveyViews = surveyService.surveyPaginationAssignSortTimeDESC(userId, 8,</span>
+                        pageNo);
+<span class="nc" id="L572">            Map&lt;String, Object&gt; response = surveyService.responseDashboardPaginationAssign(totalRecords, surveyViews, pageNo);</span>
+
+<span class="nc" id="L574">                return new ResponseEntity&lt;Map&lt;String, Object&gt;&gt;(response, HttpStatus.OK);</span>
+
+<span class="nc" id="L576">        } catch (Exception e) {</span>
+<span class="nc" id="L577">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+    @PostMapping(value = &quot;/update-response&quot;)
+    public void updateResponse(@RequestBody Document response) throws Exception {
+
+<span class="nc" id="L584">        surveyService.updateResponse(response);</span>
+<span class="nc" id="L585">    }</span>
+
+
+
+    @DeleteMapping(&quot;/delete-survey/{surveyId}&quot;)
+    public ResponseEntity&lt;Void&gt; deleteSurveyById(@PathVariable int surveyId) {
+
+<span class="nc" id="L592">        surveyService.deleteSurveyById(surveyId);</span>
+<span class="nc" id="L593">        return new ResponseEntity&lt;&gt;(HttpStatus.OK);</span>
+    }
+
+    @GetMapping(value = &quot;/find-all-user&quot;)
+    public ResponseEntity&lt;List&lt;User&gt;&gt; selectAllUser() {
+
+        try {
+<span class="nc" id="L600">            return new ResponseEntity&lt;&gt;(userDao.selectAllUser(), HttpStatus.OK);</span>
+<span class="nc" id="L601">        } catch (Exception e) {</span>
+<span class="nc" id="L602">            return new ResponseEntity&lt;&gt;(HttpStatus.BAD_REQUEST);</span>
+        }
+    }
+
+
+    @PostMapping(value = &quot;/assign-survey&quot;)
+    public void assignSurvey(@RequestBody Document payload) {
+
+<span class="fc" id="L610">        surveyService.assignSurvey(payload);</span>
+
+<span class="fc" id="L612">    }</span>
+
+    @GetMapping(&quot;/coba23&quot;)
+    public Survey check() throws SQLException {
+
+<span class="nc" id="L617">        Survey survey = new Survey();</span>
+<span class="nc" id="L618">        survey.setIdSurvey(2);</span>
+<span class="nc" id="L619">        survey.setIdUser(&quot;6c371d17-286f-4b2f-8be6-8108ff193c57&quot;);</span>
+<span class="nc" id="L620">        survey.setColorHeader(&quot;#c03232&quot;);</span>
+<span class="nc" id="L621">        survey.setColorBg(&quot;#ffffff&quot;);</span>
+<span class="nc" id="L622">        survey.setPrivateStatus(false);</span>
+<span class="nc" id="L623">        survey.setPublishStatus(false);</span>
+
+<span class="nc" id="L625">        Page page1 = new Page();</span>
+<span class="nc" id="L626">        page1.setId(0);</span>
+<span class="nc" id="L627">        page1.setTitle(&quot;Survey 1&quot;);</span>
+<span class="nc" id="L628">        page1.setDesc(&quot;tentang survey 1&quot;);</span>
+
+<span class="nc" id="L630">        Question question00 = new Question();</span>
+<span class="nc" id="L631">        question00.setId(0);</span>
+<span class="nc" id="L632">        question00.setQuestion(&quot;siapa nama kamu?&quot;);</span>
+<span class="nc" id="L633">        question00.setDescription(null);</span>
+<span class="nc" id="L634">        question00.setQuestionType(&quot;SHORT_ANSWER&quot;);</span>
+<span class="nc" id="L635">        question00.setRequiredValue(false);</span>
+
+<span class="nc" id="L637">        Values values = new Values();</span>
+<span class="nc" id="L638">        values.setId(0);</span>
+<span class="nc" id="L639">        values.setValues(&quot;Option 0&quot;);</span>
+<span class="nc" id="L640">        values.setChecked(false);</span>
+<span class="nc" id="L641">        values.setImgValue(null);</span>
+
+<span class="nc" id="L643">        question00.addValues(values);</span>
+
+<span class="nc" id="L645">        Question question01 = new Question();</span>
+<span class="nc" id="L646">        question01.setId(1);</span>
+<span class="nc" id="L647">        question01.setQuestion(&quot;deskripsikan dirimu&quot;);</span>
+<span class="nc" id="L648">        question01.setDescription(null);</span>
+<span class="nc" id="L649">        question01.setQuestionType(&quot;LONG_ANSWER&quot;);</span>
+<span class="nc" id="L650">        question01.setRequiredValue(false);</span>
+
+<span class="nc" id="L652">        Values values1 = new Values();</span>
+<span class="nc" id="L653">        values1.setId(0);</span>
+<span class="nc" id="L654">        values1.setValues(&quot;Option 0&quot;);</span>
+<span class="nc" id="L655">        values1.setChecked(false);</span>
+<span class="nc" id="L656">        values1.setImgValue(null);</span>
+
+<span class="nc" id="L658">        question01.addValues(values1);</span>
+<span class="nc" id="L659">        page1.addQuestions(question00);</span>
+<span class="nc" id="L660">        page1.addQuestions(question01);</span>
+
+<span class="nc" id="L662">        Page page2 = new Page();</span>
+<span class="nc" id="L663">        page2.setId(1);</span>
+<span class="nc" id="L664">        page2.setTitle(&quot;Form 2&quot;);</span>
+<span class="nc" id="L665">        page2.setDesc(&quot;tentang form 2&quot;);</span>
+
+<span class="nc" id="L667">        Question question10 = new Question();</span>
+<span class="nc" id="L668">        question10.setId(0);</span>
+<span class="nc" id="L669">        question10.setQuestion(&quot;2+2?&quot;);</span>
+<span class="nc" id="L670">        question10.setDescription(null);</span>
+<span class="nc" id="L671">        question10.setQuestionType(&quot;MULTIPLE&quot;);</span>
+<span class="nc" id="L672">        question10.setRequiredValue(false);</span>
+
+<span class="nc" id="L674">        Values values100 = new Values();</span>
+<span class="nc" id="L675">        values100.setId(0);</span>
+<span class="nc" id="L676">        values100.setValues(&quot;4&quot;);</span>
+<span class="nc" id="L677">        values100.setChecked(false);</span>
+<span class="nc" id="L678">        values100.setImgValue(null);</span>
+
+<span class="nc" id="L680">        Values values101 = new Values();</span>
+<span class="nc" id="L681">        values101.setId(1);</span>
+<span class="nc" id="L682">        values101.setValues(&quot;4&quot;);</span>
+<span class="nc" id="L683">        values101.setChecked(false);</span>
+<span class="nc" id="L684">        values101.setImgValue(null);</span>
+
+<span class="nc" id="L686">        Values values103 = new Values();</span>
+<span class="nc" id="L687">        values103.setId(2);</span>
+<span class="nc" id="L688">        values103.setValues(&quot;6&quot;);</span>
+<span class="nc" id="L689">        values103.setChecked(false);</span>
+<span class="nc" id="L690">        values103.setImgValue(null);</span>
+
+<span class="nc" id="L692">        question10.addValues(values100);</span>
+<span class="nc" id="L693">        question10.addValues(values101);</span>
+<span class="nc" id="L694">        question10.addValues(values103);</span>
+
+<span class="nc" id="L696">        Question question11 = new Question();</span>
+<span class="nc" id="L697">        question11.setId(1);</span>
+<span class="nc" id="L698">        question11.setQuestion(&quot;checklist yang sesuai dengan dirimu&quot;);</span>
+<span class="nc" id="L699">        question11.setDescription(null);</span>
+<span class="nc" id="L700">        question11.setQuestionType(&quot;CHECKBOX&quot;);</span>
+<span class="nc" id="L701">        question11.setRequiredValue(false);</span>
+
+<span class="nc" id="L703">        Values values110 = new Values();</span>
+<span class="nc" id="L704">        values110.setId(0);</span>
+<span class="nc" id="L705">        values110.setValues(&quot;Baik&quot;);</span>
+<span class="nc" id="L706">        values110.setChecked(false);</span>
+<span class="nc" id="L707">        values110.setImgValue(null);</span>
+
+<span class="nc" id="L709">        Values values111 = new Values();</span>
+<span class="nc" id="L710">        values111.setId(1);</span>
+<span class="nc" id="L711">        values111.setValues(&quot;Rajin menabung&quot;);</span>
+<span class="nc" id="L712">        values111.setChecked(false);</span>
+<span class="nc" id="L713">        values111.setImgValue(null);</span>
+
+<span class="nc" id="L715">        Values values113 = new Values();</span>
+<span class="nc" id="L716">        values113.setId(2);</span>
+<span class="nc" id="L717">        values113.setValues(&quot;Jahat&quot;);</span>
+<span class="nc" id="L718">        values113.setChecked(false);</span>
+<span class="nc" id="L719">        values113.setImgValue(null);</span>
+
+<span class="nc" id="L721">        question11.addValues(values110);</span>
+<span class="nc" id="L722">        question11.addValues(values111);</span>
+<span class="nc" id="L723">        question11.addValues(values113);</span>
+
+<span class="nc" id="L725">        Question question12 = new Question();</span>
+<span class="nc" id="L726">        question12.setId(1);</span>
+<span class="nc" id="L727">        question12.setQuestion(&quot;apa jenis kelaminmu?&quot;);</span>
+<span class="nc" id="L728">        question12.setDescription(null);</span>
+<span class="nc" id="L729">        question12.setQuestionType(&quot;DROPDOWN&quot;);</span>
+<span class="nc" id="L730">        question12.setRequiredValue(false);</span>
+
+<span class="nc" id="L732">        Values values120 = new Values();</span>
+<span class="nc" id="L733">        values120.setId(0);</span>
+<span class="nc" id="L734">        values120.setValues(&quot;Male&quot;);</span>
+<span class="nc" id="L735">        values120.setChecked(false);</span>
+<span class="nc" id="L736">        values120.setImgValue(null);</span>
+
+<span class="nc" id="L738">        Values values121 = new Values();</span>
+<span class="nc" id="L739">        values121.setId(1);</span>
+<span class="nc" id="L740">        values121.setValues(&quot;Female&quot;);</span>
+<span class="nc" id="L741">        values121.setChecked(false);</span>
+<span class="nc" id="L742">        values121.setImgValue(null);</span>
+
+<span class="nc" id="L744">        Values values123 = new Values();</span>
+<span class="nc" id="L745">        values123.setId(2);</span>
+<span class="nc" id="L746">        values123.setValues(&quot;Half&quot;);</span>
+<span class="nc" id="L747">        values123.setChecked(false);</span>
+<span class="nc" id="L748">        values123.setImgValue(null);</span>
+
+<span class="nc" id="L750">        question12.addValues(values120);</span>
+<span class="nc" id="L751">        question12.addValues(values121);</span>
+<span class="nc" id="L752">        question12.addValues(values123);</span>
+
+<span class="nc" id="L754">        page2.addQuestions(question10);</span>
+<span class="nc" id="L755">        page2.addQuestions(question11);</span>
+<span class="nc" id="L756">        page2.addQuestions(question12);</span>
+
+<span class="nc" id="L758">        survey.addPages(page1);</span>
+<span class="nc" id="L759">        survey.addPages(page2);</span>
+
+<span class="nc" id="L761">        String a = &quot;adfadf.tafdafds.adfdas.jpeg&quot;;</span>
+<span class="nc" id="L762">        List&lt;String&gt; list = Arrays.asList(a.split(&quot;\\.&quot;));</span>
+        // return list.get(list.size() - 1);
+<span class="nc" id="L764">        return survey;</span>
+    }
+
+    @DeleteMapping(&quot;/dismiss-survey/{user_id}/{survey_id}&quot;)
+    public void dismissSurvey(@PathVariable(name = &quot;user_id&quot;) String userId, @PathVariable(name = &quot;survey_id&quot;) int surveyId){
+
+<span class="nc" id="L770">        surveyDao.dismissSurvey(userId, surveyId);</span>
+
+<span class="nc" id="L772">    }</span>
+
+    @PostMapping(&quot;/clone-survey/{survey_id}&quot;)
+    public Survey cloneSurvey( @PathVariable(name = &quot;survey_id&quot;) int surveyId) throws SQLException {
+<span class="nc" id="L776">        return surveyService.cloneSurvey(surveyId);</span>
+    }
+
+
+    @GetMapping(&quot;/detail-view/{idSurvey}/{index}&quot;)
+    public Document getDetail(@PathVariable(name = &quot;index&quot;) int index, @PathVariable(name = &quot;idSurvey&quot;) int idSurvey) throws Exception {
+<span class="nc bnc" id="L782" title="All 2 branches missed.">        if(surveyDao.numberOfUserSubmitted(idSurvey) == 0){</span>
+<span class="nc" id="L783">            return null;</span>
+        } else {
+<span class="nc" id="L785">            return surveyService.detailView(index, idSurvey);</span>
+        }
+    }
+
+    @GetMapping(&quot;/high-view/{idSurvey}/{pageNo}&quot;)
+    public Document paginationUsersHighView(@PathVariable(name = &quot;idSurvey&quot;) int idSurvey, @PathVariable(name = &quot;pageNo&quot;) int pageNo) throws SQLException {
+<span class="nc" id="L791">            return surveyService.getUsersResponseHigView(idSurvey, pageNo);</span>
+
+    }
+
+    @GetMapping(&quot;/coba&quot;)
+    public List&lt;Values&gt; coba() throws SQLException {
+
+<span class="nc" id="L798">        return surveyService.loadOptionAnswerbySurveyIdPageIdandQuestionId(321, 0, 3, &quot;f080ff70-36dd-45b8-a37a-349046f5af34&quot;);</span>
+    }
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

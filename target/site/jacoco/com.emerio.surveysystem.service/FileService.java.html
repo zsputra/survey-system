@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FileService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">survey-system-survey-service</a> &gt; <a href="index.source.html" class="el_package">com.emerio.surveysystem.service</a> &gt; <span class="el_source">FileService.java</span></div><h1>FileService.java</h1><pre class="source lang-java linenums">package com.emerio.surveysystem.service;
+
+import io.minio.MinioClient;
+import io.minio.errors.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.xmlpull.v1.XmlPullParserException;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+
+//import javax.imageio.ImageIO;
+//import java.awt.image.BufferedImage;
+//import java.io.ByteArrayOutputStream;
+
+@Service
+<span class="fc" id="L20">public class FileService {</span>
+
+    @Value(&quot;${app.minio.host}&quot;)
+    private String minioHost;
+    //
+    @Value(&quot;${app.minio.ip}&quot;)
+    private String minioIp;
+
+    @Value(&quot;${app.minio.access.key}&quot;)
+    private String minioAccessKey;
+
+    @Value(&quot;${app.minio.secret.key}&quot;)
+    private String minioSecretKey;
+
+    private MinioClient client;
+
+    // public FileService() {
+    // try {
+    // this.client = new MinioClient(&quot;http://localhost:8081/&quot;,
+    // &quot;AKIAIOSFODNN7EXAMPLE&quot;,
+    // &quot;wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY&quot;);
+    // } catch (InvalidEndpointException | InvalidPortException e) {
+    // // TODO Auto-generated catch block
+    // e.printStackTrace();
+    // }
+    // }
+
+    public InputStream getFile(String bucket, String filename) {
+        try {
+            try {
+<span class="nc" id="L50">                this.client = new MinioClient(this.minioHost, this.minioAccessKey, this.minioSecretKey);</span>
+<span class="nc" id="L51">            } catch (InvalidEndpointException e) {</span>
+<span class="nc" id="L52">                e.printStackTrace();</span>
+<span class="nc" id="L53">            } catch (InvalidPortException e) {</span>
+<span class="nc" id="L54">                e.printStackTrace();</span>
+<span class="nc" id="L55">            }</span>
+<span class="nc" id="L56">            return client.getObject(bucket, filename);</span>
+<span class="nc" id="L57">        } catch (InvalidKeyException | InvalidBucketNameException | NoSuchAlgorithmException | InsufficientDataException</span>
+                | NoResponseException | ErrorResponseException | InternalException | InvalidArgumentException
+                | InvalidResponseException | IOException | XmlPullParserException e) {
+            // TODO Auto-generated catch block
+<span class="nc" id="L61">            e.printStackTrace();</span>
+        }
+<span class="nc" id="L63">        return null;</span>
+    }
+
+    public void uploadFile(byte[] imageBuffer, String objectName) {
+        try {
+            try {
+<span class="nc" id="L69">                this.client = new MinioClient(this.minioHost, this.minioAccessKey, this.minioSecretKey);</span>
+<span class="nc" id="L70">            } catch (InvalidEndpointException e) {</span>
+<span class="nc" id="L71">                e.printStackTrace();</span>
+<span class="nc" id="L72">            } catch (InvalidPortException e) {</span>
+<span class="nc" id="L73">                e.printStackTrace();</span>
+<span class="nc" id="L74">            }</span>
+
+<span class="nc" id="L76">            String ids = objectName.split(&quot;\\(&quot;)[0];</span>
+
+<span class="nc" id="L78">            int exp =  Integer.parseInt(objectName.split(&quot;\\(&quot;)[1].split(&quot;\\)&quot;)[0]);</span>
+
+<span class="nc" id="L80">            String format = &quot;.jpeg&quot;;</span>
+
+<span class="nc" id="L82">            int i = 1;</span>
+<span class="nc bnc" id="L83" title="All 2 branches missed.">            while (i&lt;exp){</span>
+
+<span class="nc" id="L85">                client.removeObject(&quot;survey-system&quot;, ids+&quot;(&quot;+i+&quot;)&quot;+format);</span>
+
+<span class="nc" id="L87">                i++;</span>
+            }
+
+<span class="nc" id="L90">                client.putObject(&quot;survey-system&quot;, objectName, new ByteArrayInputStream(imageBuffer), imageBuffer.length,</span>
+                        &quot;application/octet-stream&quot;);
+
+<span class="nc" id="L93">        } catch (InvalidBucketNameException e) {</span>
+<span class="nc" id="L94">            e.printStackTrace();</span>
+<span class="nc" id="L95">        } catch (NoSuchAlgorithmException e) {</span>
+<span class="nc" id="L96">            e.printStackTrace();</span>
+<span class="nc" id="L97">        } catch (IOException e) {</span>
+<span class="nc" id="L98">            e.printStackTrace();</span>
+<span class="nc" id="L99">        } catch (InvalidKeyException e) {</span>
+<span class="nc" id="L100">            e.printStackTrace();</span>
+<span class="nc" id="L101">        } catch (NoResponseException e) {</span>
+<span class="nc" id="L102">            e.printStackTrace();</span>
+<span class="nc" id="L103">        } catch (XmlPullParserException e) {</span>
+<span class="nc" id="L104">            e.printStackTrace();</span>
+<span class="nc" id="L105">        } catch (ErrorResponseException e) {</span>
+<span class="nc" id="L106">            e.printStackTrace();</span>
+<span class="nc" id="L107">        } catch (InternalException e) {</span>
+<span class="nc" id="L108">            e.printStackTrace();</span>
+<span class="nc" id="L109">        } catch (InvalidArgumentException e) {</span>
+<span class="nc" id="L110">            e.printStackTrace();</span>
+<span class="nc" id="L111">        } catch (InsufficientDataException e) {</span>
+<span class="nc" id="L112">            e.printStackTrace();</span>
+<span class="nc" id="L113">        } catch (InvalidResponseException e) {</span>
+<span class="nc" id="L114">            e.printStackTrace();</span>
+<span class="nc" id="L115">        }</span>
+<span class="nc" id="L116">    }</span>
+
+    // public byte[] convertFile(BufferedImage bufferedImage) throws Exception {
+    // //BufferedImage bufferimage = ImageIO.read(new File(&quot;myimage.jpg&quot;));
+    // ByteArrayOutputStream output = new ByteArrayOutputStream();
+    // ImageIO.write(bufferedImage, &quot;jpg&quot;, output );
+    // byte [] data = output.toByteArray();
+    // return data;
+    // }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserDao.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">survey-system-survey-service</a> &gt; <a href="index.source.html" class="el_package">com.emerio.surveysystem.model</a> &gt; <span class="el_source">UserDao.java</span></div><h1>UserDao.java</h1><pre class="source lang-java linenums">package com.emerio.surveysystem.model;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.stereotype.Repository;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.List;
+
+@Repository
+<span class="fc" id="L16">public class UserDao {</span>
+
+    @Value(&quot;${datasource.url.keycloak}&quot;)
+    private String keycloakDbUrl;
+
+    @Value(&quot;${datasource.username.keycloak}&quot;)
+    private String keycloakDbUsername;
+
+    @Value(&quot;${datasource.password.keycloak}&quot;)
+    private String keycloakDbPassword;
+
+    // @Autowired
+    // JdbcTemplate jdbcTemplate;
+
+    public List&lt;User&gt; selectAllUser() {
+
+<span class="nc" id="L32">        DriverManagerDataSource ds = new DriverManagerDataSource();</span>
+
+<span class="nc" id="L34">        ds.setUrl(keycloakDbUrl);</span>
+<span class="nc" id="L35">        ds.setUsername(keycloakDbUsername);</span>
+<span class="nc" id="L36">        ds.setPassword(keycloakDbPassword);</span>
+
+        //try(Connection connection = DriverManager.getConnection(&quot;jdbc:postgresql://192.168.25.11:8300:8311/keycloak&quot;, &quot;keycloak&quot;, &quot;password&quot;)) {
+
+<span class="nc" id="L40">            JdbcTemplate jdbcTemplate = new JdbcTemplate(ds);</span>
+
+<span class="nc" id="L42">            String sql = &quot;Select id, username, email From user_entity&quot;;</span>
+
+<span class="nc" id="L44">            return jdbcTemplate.query(</span>
+                    sql,
+                    (rs, rowNum) -&gt; {
+<span class="nc" id="L47">                        User user = new User();</span>
+<span class="nc" id="L48">                        user.setId(rs.getString(&quot;id&quot;));</span>
+<span class="nc" id="L49">                        user.setUsername(rs.getString(&quot;username&quot;));</span>
+<span class="nc" id="L50">                        user.setEmail(rs.getString(&quot;email&quot;));</span>
+<span class="nc" id="L51">                        return user;</span>
+                    }
+
+            );
+//        } catch (SQLException e) {
+//            e.printStackTrace();
+        }
+
+    public String getUsenameById(String idUser) {
+
+<span class="nc" id="L61">        DriverManagerDataSource ds = new DriverManagerDataSource();</span>
+
+<span class="nc" id="L63">        ds.setUrl(keycloakDbUrl);</span>
+<span class="nc" id="L64">        ds.setUsername(keycloakDbUsername);</span>
+<span class="nc" id="L65">        ds.setPassword(keycloakDbPassword);</span>
+
+        //try(Connection connection = DriverManager.getConnection(&quot;jdbc:postgresql://192.168.25.11:8300:8311/keycloak&quot;, &quot;keycloak&quot;, &quot;password&quot;)) {
+
+<span class="nc" id="L69">        JdbcTemplate jdbcTemplate = new JdbcTemplate(ds);</span>
+
+<span class="nc" id="L71">        String sql = &quot;Select username From user_entity where id = ?&quot;;</span>
+
+<span class="nc" id="L73">        return jdbcTemplate.queryForObject(</span>
+                sql,
+                new Object[]{idUser},
+                String.class);
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>

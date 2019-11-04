@@ -1,0 +1,572 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SurveyService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">survey-system-survey-service</a> &gt; <a href="index.source.html" class="el_package">com.emerio.surveysystem.service</a> &gt; <span class="el_source">SurveyService.java</span></div><h1>SurveyService.java</h1><pre class="source lang-java linenums">package com.emerio.surveysystem.service;
+
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+
+import com.emerio.surveysystem.model.*;
+import com.google.gson.Gson;
+import org.bson.Document;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PathVariable;
+
+@Service
+<span class="fc" id="L20">public class SurveyService {</span>
+
+    @Autowired
+    SurveyDao surveyDao;
+
+    @Autowired
+    UserDao userDao;
+
+    public void insert(Survey survey) throws SQLException {
+<span class="fc" id="L29">        surveyDao.insert(survey);</span>
+<span class="fc" id="L30">    }</span>
+
+    public void inserBatch(List&lt;Survey&gt; surveys) {
+<span class="fc" id="L33">        surveyDao.insertBatch(surveys);</span>
+<span class="fc" id="L34">    }</span>
+
+    public List&lt;Survey&gt; loadAlSurveys() throws Exception {
+<span class="fc" id="L37">        return surveyDao.loadAllSurvey();</span>
+    }
+
+    public Survey loadSurveyById(int survey_id) {
+<span class="fc" id="L41">        return surveyDao.loadSurveyById(survey_id);</span>
+    }
+
+    public void updateSurvey(Survey survey) {
+<span class="fc" id="L45">        surveyDao.updateSurvey(survey);</span>
+
+<span class="fc" id="L47">    }</span>
+
+    public int getnerateId() throws SQLException {
+<span class="fc" id="L50">        return surveyDao.generatedId();</span>
+    }
+
+    public Survey loadSurveyByIdPageOne(int survey_id) {
+<span class="nc" id="L54">        return surveyDao.loadSurveyByIdPageOne(survey_id);</span>
+    }
+
+    public Page loadPageBySurveyIdandPageId(int survey_id, String user_id, int page_id) {
+<span class="nc" id="L58">        return surveyDao.loadPageBySurveyIdandPageId(survey_id, user_id, page_id);</span>
+    }
+
+    public Survey loadSurveyBySurveyIdandPageId(int survey_id, String user_id, int page_id) {
+<span class="nc" id="L62">        return surveyDao.loadSurveyBySurveyIdandPageId(survey_id, user_id, page_id);</span>
+    }
+
+    public int totalCountPage(int survey_id) {
+<span class="nc" id="L66">        return surveyDao.totalCountPage(survey_id);</span>
+    }
+
+    public List&lt;Values&gt; loadOptionAnswerbySurveyIdPageIdandQuestionId(int survey_id, int page_id, int question_id,
+            String user_id) {
+<span class="nc" id="L71">        return surveyDao.loadOptionAnswerbySurveyIdPageIdandQuestionId(survey_id, page_id, question_id, user_id);</span>
+    }
+
+    public String loadAnswerbySurveyIdPageIdandQuestionId(int survey_id, int page_id, int question_id, String user_id) {
+<span class="nc" id="L75">        return surveyDao.loadAnswerbySurveyIdPageIdandQuestionId(survey_id, page_id, question_id, user_id);</span>
+    }
+
+    public Boolean checkAnswerBySurveyIdPageIdQuestionId(int idSurvey, int page_id, int question_id, String user_id) {
+<span class="nc" id="L79">        return surveyDao.checkAnswerBySurveyIdPageIdQuestionId(idSurvey, page_id, question_id, user_id);</span>
+    }
+
+    public List&lt;SurveyView&gt; surveyPagination(String idUser, int limit, int pageNo) throws SQLException {
+<span class="nc" id="L83">        return surveyDao.surveyPagination(idUser, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationSaveStatus(String idUser, int limit, int pageNo) throws SQLException {
+<span class="nc" id="L87">        return surveyDao.surveyPaginationSaveStatus(idUser, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationSaveStatusSortByASC(String idUser, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L92">        return surveyDao.surveyPaginationSaveStatusOrderByASC(idUser, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationSaveStatusSortByDESC(String idUser, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L97">        return surveyDao.surveyPaginationSaveStatusOrderByDESC(idUser, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationSaveStatusSortByDateASC(String idUser, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L102">        return surveyDao.surveyPaginationSaveStatusOrderByDateASC(idUser, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationSaveStatusSortByDateDESC(String idUser, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L107">        return surveyDao.surveyPaginationSaveStatusOrderByDateDESC(idUser, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationPublishStatus(String idUser, int limit, int pageNo) throws SQLException {
+<span class="nc" id="L111">        return surveyDao.surveyPaginationPublishStatus(idUser, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationPublishStatusSortByASC(String idUser, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L116">        return surveyDao.surveyPaginationPublishStatusSortByASC(idUser, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationPublishStatusSortByDESC(String idUser, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L121">        return surveyDao.surveyPaginationPublishStatusSortByDESC(idUser, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationPublishStatusSortByDateASC(String idUser, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L126">        return surveyDao.surveyPaginationPublishStatusSortByDateASC(idUser, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationPublishStatusSortByDateDESC(String idUser, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L131">        return surveyDao.surveyPaginationPublishStatusSortByDateDESC(idUser, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationSortByDesc(String idUser, int limit, int pageNo) throws SQLException {
+<span class="nc" id="L135">        return surveyDao.surveyPaginationSortDesc(idUser, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationSortByAsc(String idUser, int limit, int pageNo) throws SQLException {
+<span class="nc" id="L139">        return surveyDao.surveyPaginationSortAsc(idUser, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationSortByLastModifiedDesc(String idUser, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L144">        return surveyDao.surveyPaginationSortLastModifiedDesc(idUser, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyView&gt; surveyPaginationSortByLastModifiedAsc(String idUser, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L149">        return surveyDao.surveyPaginationSortLastModifiedAsc(idUser, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyViewAssign&gt; surveyPaginationAssign(String userId, int limit, int pageNo) throws SQLException {
+<span class="nc" id="L153">        return surveyDao.surveyPaginationAssign(userId, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyViewAssign&gt; surveyPaginationAssignPrivateStatus(String userId, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L158">        return surveyDao.surveyPaginationAssignPrivateStatus(userId, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyViewAssign&gt; surveyPaginationAssignPublicStatus(String userId, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L163">        return surveyDao.surveyPaginationAssignPublicStatus(userId, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyViewAssign&gt; surveyPaginationAssignAnswered(String userId, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L168">        return surveyDao.surveyPaginationAssignAnswered(userId, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyViewAssign&gt; surveyPaginationAssignDismiss(String userId, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L173">        return surveyDao.surveyPaginationAssignDismiss(userId, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyViewAssign&gt; surveyPAginationAssignSortASC(String userId, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L178">        return surveyDao.surveyPaginationAssignSortByASC(userId, limit, pageNo);</span>
+
+    }
+
+    public List&lt;SurveyViewAssign&gt; surveyPaginationAssignSortDESC(String userId, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L184">        return surveyDao.surveyPaginationAssignSortByDESC(userId, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyViewAssign&gt; surveyPaginationAssignSortTimeASC(String userId, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L189">        return surveyDao.surveyPaginationAssignSortByTimeASC(userId, limit, pageNo);</span>
+    }
+
+    public List&lt;SurveyViewAssign&gt; surveyPaginationAssignSortTimeDESC(String userId, int limit, int pageNo)
+            throws SQLException {
+<span class="nc" id="L194">        return surveyDao.surveyPaginationAssignSortByTimeDESC(userId, limit, pageNo);</span>
+    }
+
+    public String loadUserId(int idSurvey, String user_id) {
+<span class="nc" id="L198">        return surveyDao.loadUserId(idSurvey, user_id);</span>
+    }
+
+    public Boolean loadSubmitStatus(int idSurvey, String user_id) {
+<span class="nc" id="L202">        return surveyDao.loadSubmitStatus(idSurvey, user_id);</span>
+    }
+
+    public Boolean checkResponse(int idSurvey) {
+<span class="fc" id="L206">        return surveyDao.chechResponse(idSurvey);</span>
+    }
+
+    public void deleteSurveyById(int surveyId) {
+<span class="nc" id="L210">        surveyDao.deleteSurveyById(surveyId);</span>
+<span class="nc" id="L211">    }</span>
+
+    public void deleteSurvey() {
+<span class="nc" id="L214">        surveyDao.deleteSurveys();</span>
+<span class="nc" id="L215">    }</span>
+
+    // public int totalCount(String idUser) throws SQLException {
+    // return surveyDao.totalCount(idUser);
+    // }
+
+    // public int totalCountAssign(String userId) throws SQLException {
+    // return surveyDao.totalCountAssign(userId);
+    // }
+
+    public int totalCount(String idUser) throws SQLException {
+<span class="nc" id="L226">        return surveyDao.totalCount(idUser);</span>
+    }
+
+    public int totalCountSaveStatus(String idUser) throws SQLException {
+<span class="nc" id="L230">        return surveyDao.totalCountSaveStatus(idUser);</span>
+    }
+
+    public int totalCountPublishStatus(String idUser) throws SQLException {
+<span class="nc" id="L234">        return surveyDao.totalCountPublishStatus(idUser);</span>
+    }
+
+    public int totalCountAssign(String userId) throws SQLException {
+<span class="nc" id="L238">        return surveyDao.totalCountAssign(userId);</span>
+    }
+
+    public int totalCountAssignAnsweredStatus(String userId) throws SQLException {
+<span class="nc" id="L242">        return surveyDao.totalCountAssignAnsweredStatus(userId);</span>
+    }
+
+    public int totalCoutnAssignPrivateStatus(String userId) throws SQLException {
+<span class="nc" id="L246">        return surveyDao.totalCountAssignPrivateStatus(userId);</span>
+    }
+
+    public int totalCountAssignPublicStatus(String userId) throws SQLException {
+<span class="nc" id="L250">        return surveyDao.totalCountAssignPublicStatus(userId);</span>
+
+    }
+
+    public int totaCountAssignDismissStatus(String userId) throws SQLException {
+<span class="nc" id="L255">        return surveyDao.totalCountAssignDismissStatus(userId);</span>
+    }
+
+    public Boolean checkIdSurvey(int idSurvey) {
+<span class="fc" id="L259">        return surveyDao.checkSurveyById(idSurvey);</span>
+    }
+
+    public void insertResponse(Response response, List&lt;String&gt; user_id) {
+<span class="fc" id="L263">        surveyDao.insertResponse(response, user_id);</span>
+<span class="fc" id="L264">    }</span>
+
+    public Survey cloneSurvey(int surveyId) throws SQLException {
+
+<span class="nc" id="L268">        Survey survey = surveyDao.loadSurveyById(surveyId);</span>
+<span class="nc" id="L269">        int newSurveyId = surveyDao.generatedId();</span>
+<span class="nc" id="L270">        survey.setIdSurvey(newSurveyId);</span>
+<span class="nc" id="L271">        surveyDao.updateSurvey(survey);</span>
+
+<span class="nc" id="L273">        return survey;</span>
+
+    }
+
+
+    public Document detailView(int index, int surveyId) throws Exception {
+<span class="nc" id="L279">        Survey survey =  surveyDao.loadSurveyById(surveyId);</span>
+<span class="nc" id="L280">        String userId = surveyDao.getIdUserByIndex(surveyId, index);</span>
+<span class="nc" id="L281">        String username = getUsernameByIdUser(userId);</span>
+<span class="nc bnc" id="L282" title="All 2 branches missed.">        for (Page page: survey.getPages()) {</span>
+<span class="nc bnc" id="L283" title="All 2 branches missed.">            for (Question question: page.getQuestions()) {</span>
+<span class="nc" id="L284">                Response response = surveyDao.loadResponse(userId, surveyId, page.getId(), question.getId());</span>
+<span class="nc" id="L285">                question.setAnswer(response.getAnswer());</span>
+<span class="nc" id="L286">                question.setDateAnswer(response.getDateAnswer());</span>
+<span class="nc" id="L287">                question.setValues(response.getOptionAnswers());</span>
+<span class="nc" id="L288">            }</span>
+<span class="nc" id="L289">        }</span>
+
+<span class="nc" id="L291">        return detailResondedSurvey(survey, username);</span>
+    }
+
+    public Document detailResondedSurvey(Survey survey, String username){
+<span class="nc" id="L295">        List&lt;Document&gt; pages = new ArrayList&lt;&gt;();</span>
+
+
+<span class="nc" id="L298">        Document surveyDetailed = new Document();</span>
+<span class="nc" id="L299">        surveyDetailed.put(&quot;idSurvey&quot;, survey.getIdSurvey());</span>
+<span class="nc" id="L300">        surveyDetailed.put(&quot;respondent&quot;, username);</span>
+<span class="nc" id="L301">        surveyDetailed.put(&quot;colorHeader&quot;, survey.getColorHeader());</span>
+<span class="nc" id="L302">        surveyDetailed.put(&quot;colorBg&quot;, survey.getColorBg());</span>
+<span class="nc" id="L303">        surveyDetailed.put(&quot;icon&quot;, survey.getIcon());</span>
+<span class="nc" id="L304">        surveyDetailed.put(&quot;imgHeader&quot;, survey.getImgHeader());</span>
+<span class="nc" id="L305">        surveyDetailed.put(&quot;imgIcon&quot;, survey.getImgIcon());</span>
+
+<span class="nc bnc" id="L307" title="All 2 branches missed.">        for (Page page: survey.getPages()) {</span>
+<span class="nc" id="L308">            Document page_doc = new Document();</span>
+<span class="nc" id="L309">            page_doc.put(&quot;id&quot;, page.getId());</span>
+<span class="nc" id="L310">            page_doc.put(&quot;title&quot;, page.getTitle());</span>
+<span class="nc" id="L311">            page_doc.put(&quot;desc&quot;, page.getDesc());</span>
+
+<span class="nc" id="L313">            List&lt;Document&gt; questions = new ArrayList&lt;&gt;();</span>
+
+<span class="nc bnc" id="L315" title="All 2 branches missed.">            for (Question question: page.getQuestions()) {</span>
+<span class="nc" id="L316">                Document question_doc = new Document();</span>
+<span class="nc" id="L317">                question_doc.put(&quot;id&quot;, question.getId());</span>
+<span class="nc" id="L318">                question_doc.put(&quot;question&quot;, question.getQuestion());</span>
+<span class="nc" id="L319">                question_doc.put(&quot;description&quot;, question.getDescription());</span>
+<span class="nc" id="L320">                question_doc.put(&quot;questionType&quot;, question.getQuestionType());</span>
+<span class="nc" id="L321">                question_doc.put(&quot;imgPage&quot;, question.getImgPage());</span>
+<span class="nc" id="L322">                question_doc.put(&quot;imgQuestion&quot;, question.getImgQuestion());</span>
+<span class="nc" id="L323">                question_doc.put(&quot;answer&quot;, question.getAnswer());</span>
+<span class="nc bnc" id="L324" title="All 2 branches missed.">                if(question.getDateAnswer() != null) {</span>
+<span class="nc" id="L325">                    String date = new SimpleDateFormat(&quot;mm-dd-yyyy&quot;).format(question.getDateAnswer());</span>
+<span class="nc" id="L326">                    question_doc.put(&quot;dateAnswer&quot;, date);</span>
+<span class="nc" id="L327">                } else{</span>
+<span class="nc" id="L328">                    question_doc.put(&quot;dateAnswer&quot;, null);</span>
+                }
+
+<span class="nc" id="L331">                List&lt;Document&gt; values = new ArrayList&lt;&gt;();</span>
+
+<span class="nc bnc" id="L333" title="All 2 branches missed.">                for (Values value: question.getValues()) {</span>
+<span class="nc" id="L334">                    Document value_doc = new Document();</span>
+<span class="nc" id="L335">                    value_doc.put(&quot;id&quot;, value.getId());</span>
+<span class="nc" id="L336">                    value_doc.put(&quot;values&quot;, value.getValues());</span>
+<span class="nc" id="L337">                    value_doc.put(&quot;checked&quot;, value.getChecked());</span>
+<span class="nc" id="L338">                    value_doc.put(&quot;imgValue&quot;, value.getImgValue());</span>
+<span class="nc" id="L339">                    values.add(value_doc);</span>
+<span class="nc" id="L340">                }</span>
+<span class="nc" id="L341">                question_doc.put(&quot;values&quot;, values);</span>
+<span class="nc" id="L342">                questions.add(question_doc);</span>
+<span class="nc" id="L343">            }</span>
+<span class="nc" id="L344">            page_doc.put(&quot;questions&quot;, questions);</span>
+<span class="nc" id="L345">            pages.add(page_doc);</span>
+<span class="nc" id="L346">        }</span>
+<span class="nc" id="L347">        surveyDetailed.put(&quot;pages&quot;, pages);</span>
+<span class="nc" id="L348">        return surveyDetailed;</span>
+    }
+
+    public String getUsernameByIdUser(String idUser){
+<span class="nc" id="L352">        return userDao.getUsenameById(idUser);</span>
+    }
+
+    public Document getUsersResponseHigView(int idSurvey, int pageNo) throws SQLException {
+<span class="nc" id="L356">        Document response = new Document();</span>
+<span class="nc" id="L357">        Survey survey = surveyDao.loadSurveyById(idSurvey);</span>
+<span class="nc bnc" id="L358" title="All 2 branches missed.">        if(surveyDao.numberOfUserSubmitted(idSurvey) == 0){</span>
+
+<span class="nc" id="L360">            response.put(&quot;idSurvey&quot;, idSurvey);</span>
+<span class="nc" id="L361">            response.put(&quot;totalResponse&quot;, surveyDao.totalResponseBySurvey(idSurvey));</span>
+<span class="nc" id="L362">            response.put(&quot;title&quot;, survey.getPages().get(0).getTitle());</span>
+<span class="nc" id="L363">            response.put(&quot;colorHeader&quot;, survey.getColorHeader());</span>
+<span class="nc" id="L364">            response.put(&quot;colorBg&quot;,survey.getColorBg());</span>
+<span class="nc" id="L365">            response.put(&quot;imgHeader&quot;, survey.getImgHeader());</span>
+<span class="nc" id="L366">            response.put(&quot;icon&quot;, survey.getIcon());</span>
+<span class="nc" id="L367">            response.put(&quot;imgIcon&quot;, survey.getImgIcon());</span>
+<span class="nc" id="L368">            response.put(&quot;response&quot;, null);</span>
+<span class="nc" id="L369">            return response;</span>
+        }else {
+<span class="nc" id="L371">            List&lt;String&gt; users = surveyDao.getOrderedSubmittedUser(idSurvey, pageNo);</span>
+<span class="nc" id="L372">            List&lt;Document&gt; userResponses = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L373" title="All 2 branches missed.">            for (String idUser : users) {</span>
+<span class="nc" id="L374">                String username = getUsernameByIdUser(idUser);</span>
+<span class="nc" id="L375">                int index = (pageNo - 1) * 12 + users.indexOf(idUser);</span>
+<span class="nc" id="L376">                Document doc = new Document();</span>
+<span class="nc" id="L377">                doc.put(&quot;respondent&quot;, username);</span>
+<span class="nc" id="L378">                doc.put(&quot;responseIndex&quot;, index);</span>
+<span class="nc" id="L379">                userResponses.add(doc);</span>
+
+
+<span class="nc" id="L382">            }</span>
+
+<span class="nc" id="L384">            response.put(&quot;idSurvey&quot;, idSurvey);</span>
+<span class="nc" id="L385">            int totalresponse = surveyDao.totalResponseBySurvey(idSurvey);</span>
+<span class="nc" id="L386">            int totalPage = 0;</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">            if (totalresponse % 12 == 0) {</span>
+<span class="nc" id="L388">                totalPage = totalresponse / 12;</span>
+            } else {
+<span class="nc" id="L390">                totalPage = totalresponse / 12 + 1;</span>
+            }
+
+<span class="nc" id="L393">            response.put(&quot;totalResponse&quot;, totalresponse);</span>
+<span class="nc" id="L394">            response.put(&quot;totalPage&quot;, totalPage);</span>
+<span class="nc" id="L395">            response.put(&quot;title&quot;, survey.getPages().get(0).getTitle());</span>
+<span class="nc" id="L396">            response.put(&quot;colorHeader&quot;, survey.getColorHeader());</span>
+<span class="nc" id="L397">            response.put(&quot;colorBg&quot;, survey.getColorBg());</span>
+<span class="nc" id="L398">            response.put(&quot;imgHeader&quot;, survey.getImgHeader());</span>
+<span class="nc" id="L399">            response.put(&quot;icon&quot;, survey.getIcon());</span>
+<span class="nc" id="L400">            response.put(&quot;imgIcon&quot;, survey.getImgIcon());</span>
+<span class="nc" id="L401">            response.put(&quot;response&quot;, userResponses);</span>
+<span class="nc" id="L402">            return response;</span>
+        }
+    }
+
+    public void assignSurvey(Document payload){
+<span class="fc" id="L407">        List&lt;String&gt; userId = (List&lt;String&gt;) payload.get(&quot;userList&quot;);</span>
+<span class="fc" id="L408">        int survey_id = payload.getInteger(&quot;idSurvey&quot;);</span>
+
+<span class="fc" id="L410">        surveyDao.assignSurvey(survey_id, userId);</span>
+<span class="fc" id="L411">        Survey survey = loadSurveyById(survey_id);</span>
+
+<span class="fc" id="L413">        survey.setPrivateStatus(payload.getBoolean(&quot;privateStatus&quot;));</span>
+<span class="fc" id="L414">        survey.setPublishStatus(true);</span>
+<span class="fc" id="L415">        survey.setActiveStatus(payload.getBoolean(&quot;activeStatus&quot;));</span>
+
+<span class="fc" id="L417">        surveyDao.updateStatusSurvey(survey);</span>
+
+<span class="pc bpc" id="L419" title="1 of 2 branches missed.">        if (checkResponse(survey_id) == false) {</span>
+<span class="fc" id="L420">            List&lt;Response&gt; responses = new ArrayList&lt;&gt;();</span>
+
+<span class="fc bfc" id="L422" title="All 2 branches covered.">            for (Page page : survey.getPages()) {</span>
+<span class="fc" id="L423">                Gson gson = new Gson();</span>
+<span class="fc bfc" id="L424" title="All 2 branches covered.">                for (Question question : page.getQuestions()) {</span>
+<span class="fc" id="L425">                    String json = gson.toJson(question);</span>
+
+<span class="fc" id="L427">                    Response response1 = new Response();</span>
+
+<span class="fc" id="L429">                    response1.setPageId(page.getId());</span>
+<span class="fc" id="L430">                    response1.setSurveyId(survey.getIdSurvey());</span>
+<span class="fc" id="L431">                    response1.setQuestionId(question.getId());</span>
+<span class="fc" id="L432">                    List&lt;Values&gt; listOptionAnswer = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L433" title="All 2 branches covered.">                    for (Values value : question.getValues()) {</span>
+<span class="fc" id="L434">                        Values optionAnswer = new Values();</span>
+<span class="fc" id="L435">                        optionAnswer.setId(value.getId());</span>
+<span class="fc" id="L436">                        optionAnswer.setValues(value.getValues());</span>
+<span class="fc" id="L437">                        optionAnswer.setChecked(value.getChecked());</span>
+<span class="fc" id="L438">                        optionAnswer.setImgValue(value.getImgValue());</span>
+<span class="fc" id="L439">                        listOptionAnswer.add(optionAnswer);</span>
+<span class="fc" id="L440">                    }</span>
+<span class="fc" id="L441">                    response1.setAnswer(question.getAnswer());</span>
+<span class="fc" id="L442">                    response1.setDateAnswer(question.getDateAnswer());</span>
+<span class="fc" id="L443">                    response1.setOptionAnswers(listOptionAnswer);</span>
+<span class="fc" id="L444">                    response1.setQuestionType(question.getQuestionType());</span>
+                    // responses.add(response1);
+<span class="fc" id="L446">                    insertResponse(response1, userId);</span>
+<span class="fc" id="L447">                }</span>
+<span class="fc" id="L448">            }</span>
+        }
+<span class="fc" id="L450">    }</span>
+
+    public void updateResponse(Document response) throws Exception {
+
+<span class="nc" id="L454">        List&lt;Response&gt; responses = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L455">        List&lt;Object&gt; questions = (List&lt;Object&gt;) response.get(&quot;questions&quot;);</span>
+<span class="nc" id="L456">        Gson gson = new Gson();</span>
+<span class="nc" id="L457">        int idSurvey = response.getInteger(&quot;idSurvey&quot;);</span>
+<span class="nc" id="L458">        String idUser = response.getString(&quot;idUser&quot;);</span>
+<span class="nc" id="L459">        surveyDao.updateSubmitStatus(response.getInteger(&quot;idSurvey&quot;), response.getString(&quot;idUser&quot;),</span>
+<span class="nc" id="L460">                response.getBoolean(&quot;submitStatus&quot;));</span>
+<span class="nc bnc" id="L461" title="All 2 branches missed.">        for (Object question : questions) {</span>
+<span class="nc" id="L462">            String json = gson.toJson(question);</span>
+
+<span class="nc" id="L464">            Document doc = Document.parse(json);</span>
+<span class="nc" id="L465">            Response response1 = new Response();</span>
+
+<span class="nc" id="L467">            response1.setPageId(response.getInteger(&quot;id&quot;));</span>
+<span class="nc" id="L468">            response1.setSurveyId(response.getInteger(&quot;idSurvey&quot;));</span>
+<span class="nc" id="L469">            response1.setQuestionId(doc.getInteger(&quot;id&quot;));</span>
+<span class="nc" id="L470">            response1.setUserId(response.getString(&quot;idUser&quot;));</span>
+
+<span class="nc bnc" id="L472" title="All 2 branches missed.">            if (doc.getString(&quot;questionType&quot;).equalsIgnoreCase(&quot;checkbox&quot;)) {</span>
+<span class="nc" id="L473">                List&lt;Document&gt; values = (List&lt;Document&gt;) doc.get(&quot;values&quot;);</span>
+<span class="nc" id="L474">                List&lt;Values&gt; optionAnswers = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L475" title="All 2 branches missed.">                for (Document value : values) {</span>
+<span class="nc" id="L476">                    Values optionAnswer = new Values();</span>
+<span class="nc" id="L477">                    optionAnswer.setId(value.getInteger(&quot;id&quot;));</span>
+<span class="nc" id="L478">                    optionAnswer.setValues(value.getString(&quot;values&quot;));</span>
+<span class="nc" id="L479">                    optionAnswer.setChecked(value.getBoolean(&quot;checked&quot;));</span>
+<span class="nc" id="L480">                    optionAnswer.setImgValue(value.getString(&quot;imgValue&quot;));</span>
+<span class="nc" id="L481">                    optionAnswers.add(optionAnswer);</span>
+
+<span class="nc" id="L483">                }</span>
+<span class="nc" id="L484">                response1.setQuestionType(doc.getString(&quot;questionType&quot;));</span>
+<span class="nc" id="L485">                response1.setOptionAnswers(optionAnswers);</span>
+<span class="nc" id="L486">                response1.setAnswer(doc.getString(&quot;answer&quot;));</span>
+<span class="nc" id="L487">                surveyDao.updateResponseCheckbox(response1);</span>
+
+<span class="nc" id="L489">            } else {</span>
+<span class="nc" id="L490">                Values answer = new Values();</span>
+<span class="nc" id="L491">                answer.setId(0);</span>
+<span class="nc" id="L492">                answer.setValues(doc.getString(&quot;answer&quot;));</span>
+
+<span class="nc" id="L494">                response1.setAnswer(doc.getString(&quot;answer&quot;));</span>
+<span class="nc bnc" id="L495" title="All 2 branches missed.">                if (doc.getString(&quot;questionType&quot;).equalsIgnoreCase(&quot;date_type&quot;)) {</span>
+<span class="nc" id="L496">                    LocalDateTime localDateTime = LocalDateTime.parse(doc.getString(&quot;dateAnswer&quot;),</span>
+                            DateTimeFormatter.ISO_DATE_TIME);
+
+                    try {
+<span class="nc" id="L500">                        SimpleDateFormat dateFormat = new SimpleDateFormat(&quot;yyyy-MM-dd&quot;);</span>
+<span class="nc" id="L501">                        Date parsedDate = dateFormat.parse(doc.getString(&quot;dateAnswer&quot;));</span>
+<span class="nc" id="L502">                        Timestamp timestamp = new java.sql.Timestamp(parsedDate.getTime());</span>
+<span class="nc" id="L503">                        response1.setDateAnswer(timestamp);</span>
+<span class="nc" id="L504">                    } catch(Exception e) { //this generic but you can control another types of exception</span>
+                        // look the origin of excption
+<span class="nc" id="L506">                    }</span>
+
+<span class="nc" id="L508">                } else {</span>
+<span class="nc" id="L509">                    response1.setDateAnswer(null);</span>
+                }
+<span class="nc" id="L511">                surveyDao.updateResponseBesideCheckbox(response1);</span>
+
+            }
+<span class="nc" id="L514">        }</span>
+<span class="nc bnc" id="L515" title="All 2 branches missed.">        if(response.getBoolean(&quot;submitStatus&quot;)){</span>
+<span class="nc" id="L516">            List&lt;Response&gt; ress = surveyDao.loadResponsesByIdSurveyandIdUser(idSurvey, idUser);</span>
+<span class="nc" id="L517">            surveyDao.moveToResponse(ress);</span>
+<span class="nc bnc" id="L518" title="All 2 branches missed.">            for (Response r: ress) {</span>
+<span class="nc" id="L519">                surveyDao.deleteResponseTempByUserIdandSurveyId(r.getSurveyId(), r.getUserId());</span>
+<span class="nc" id="L520">            }</span>
+
+        }
+<span class="nc" id="L523">    }</span>
+
+    public Map&lt;String, Object&gt; responseDashboardPagination(
+            int totalRecords, List&lt;SurveyView&gt; surveyViews, int pageNo)
+            throws SQLException {
+
+<span class="nc" id="L529">        int p = 0;</span>
+<span class="nc bnc" id="L530" title="All 2 branches missed.">        if (totalRecords % 8 == 0) {</span>
+<span class="nc" id="L531">            p = totalRecords / 8;</span>
+        } else {
+<span class="nc" id="L533">            p = totalRecords / 8 + 1;</span>
+        }
+
+<span class="nc bnc" id="L536" title="All 2 branches missed.">        if (pageNo &lt;= p) {</span>
+<span class="nc" id="L537">            Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L538">            response.put(&quot;surveyView&quot;, surveyViews);</span>
+<span class="nc" id="L539">            response.put(&quot;totalPages&quot;, p);</span>
+
+<span class="nc" id="L541">            return response;</span>
+        } else {
+<span class="nc" id="L543">            return null;</span>
+        }
+    }
+
+    public Map&lt;String, Object&gt; responseDashboardPaginationAssign(
+            int totalRecords, List&lt;SurveyViewAssign&gt; surveyViews, int pageNo)
+            throws SQLException {
+
+<span class="nc" id="L551">        int p = 0;</span>
+<span class="nc bnc" id="L552" title="All 2 branches missed.">        if (totalRecords % 8 == 0) {</span>
+<span class="nc" id="L553">            p = totalRecords / 8;</span>
+        } else {
+<span class="nc" id="L555">            p = totalRecords / 8 + 1;</span>
+        }
+
+<span class="nc bnc" id="L558" title="All 2 branches missed.">        if (pageNo &lt;= p) {</span>
+<span class="nc" id="L559">            Map&lt;String, Object&gt; response = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L560">            response.put(&quot;surveyView&quot;, surveyViews);</span>
+<span class="nc" id="L561">            response.put(&quot;totalPages&quot;, p);</span>
+
+<span class="nc" id="L563">            return response;</span>
+        } else {
+<span class="nc" id="L565">            return null;</span>
+        }
+    }
+
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.0.201801022044</span></div></body></html>
